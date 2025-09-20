@@ -1,0 +1,29 @@
+{
+  "name": "server-worker",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/tracktally/firebase-worker#readme",
+  "bugs": {
+    "url": "https://github.com/tracktally/firebase-worker/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tracktally/firebase-worker.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+      "build": "tsc",
+      "start": "ts-node rollup.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.5.0"
+  }
+}
