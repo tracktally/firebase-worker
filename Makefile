@@ -19,13 +19,18 @@ logs:
 	tail -f $(LOG_FILE)
 
 
-CRON_JOB=*/15 * * * * docker run --rm $(IMAGE_NAME) >> $(LOG_FILE) 2>&1
+# XXX: Adjust accordingly
+CRON_JOB=0 * * * * docker run --rm $(IMAGE_NAME) >> $(LOG_FILE) 2>&1
 
 .PHONY: cron
 cron:
+	@echo Installing cron job: $(CRON_JOB)
 	@(crontab -l 2>/dev/null; echo "$(CRON_JOB)") | sort -u | crontab -
+	@crontab -l
 
 .PHONY: uncron
 uncron:
+	@echo Removing cron job: $(CRON_JOB)
 	@crontab -l 2>/dev/null | grep -v -F "$(CRON_JOB)" | crontab -
+	@crontab -l
 
