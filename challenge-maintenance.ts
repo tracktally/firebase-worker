@@ -157,7 +157,11 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
       lastResetAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     for (const u of usersSnap.docs) {
-      batch.update(u.ref, { counter: 0 });
+      batch.update(u.ref, {
+         counter: 0 ,
+         goalReachedAt: null,
+         goalPartialReachedAt: null,
+        });
     }
     await batch.commit();
   }
