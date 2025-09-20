@@ -19,7 +19,7 @@ logs:
 	tail -f $(LOG_FILE)
 
 
-CRON_JOB=*/15 * * * * docker run --rm -v $(PWD):/usr/src/app $(IMAGE_NAME) >> $(LOG_FILE) 2>&1
+CRON_JOB=*/15 * * * * docker run --rm $(IMAGE_NAME) >> $(LOG_FILE) 2>&1
 
 .PHONY: cron
 cron:
