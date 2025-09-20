@@ -11,7 +11,7 @@ build:
 
 .PHONY: run
 run:
-	@docker run --rm --name $(CONTAINER_NAME) $(IMAGE_NAME) >> $(LOG_FILE) 2>&1
+	@docker run --rm --name $(CONTAINER_NAME) $(IMAGE_NAME)
 
 
 .PHONY: logs

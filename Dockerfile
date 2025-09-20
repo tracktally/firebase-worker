@@ -11,4 +11,6 @@ RUN npm install
 COPY . .
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
+ENV TZ=Europe/Zurich
+
 CMD ["./run-challenge-maintenance.sh"]
