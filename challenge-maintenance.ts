@@ -1,5 +1,6 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
+import { getResetDates } from "./util";
 
 admin.initializeApp({
     credential: admin.credential.cert(require("./secrets/service-account.json")),
@@ -93,21 +94,14 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
       name?: string;  
       counter?: number;
       interval_hrs?: number;
-      lastResetAt?: admin.firestore.Timestamp;
+      lastResetAt,
       resetTimeStr?: string;
     };
 
     const teamTotal = challengeData?.counter ?? 0;
     const name = challengeData.name ?? "<unknown>";
 
-    const intervalHrs = challengeData.interval_hrs ?? 24;
-    const resetTimeStr = challengeData.resetTimeStr ?? "00:00";
-    const lastResetDate = challengeData.lastResetAt?.toDate() ?? yesterdayMidnight;
-
-    const [h, m] = resetTimeStr.split(":").map(Number);
-    const nextResetDate = new Date(lastResetDate);
-    nextResetDate.setHours(h, m, 0, 0);    
-    nextResetDate.setHours(nextResetDate.getHours() + intervalHrs);
+    const {lastResetDate, nextResetDate, intervalHrs} = getResetDates(challengeData, now);
 
     /*
      * reset date is either midnight if no data in firebase
