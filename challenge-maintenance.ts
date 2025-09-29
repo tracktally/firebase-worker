@@ -22,7 +22,11 @@ async function runChallengeMaintanceMidnight(): Promise<void> {
 
     for (const chDoc of challengesSnap.docs) {
         const challengeId = chDoc.id;
-        const challengeData = chDoc.data() as { counter?: number };
+        const challengeData = chDoc.data() as { 
+          counter?: number
+          goalCounterUser?: number,
+          goalCounterChallenge?: number,
+        };
         const teamTotal = challengeData?.counter ?? 0;
         console.log("processing challenge", challengeId);
 
@@ -46,6 +50,8 @@ async function runChallengeMaintanceMidnight(): Promise<void> {
             teamTotal,
             users: usersTotals,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            goalCounterUser: challengeData.goalCounterUser,
+            goalCounterChallenge: challengeData.goalCounterChallenge,
         },
             { merge: true }
         );
@@ -124,6 +130,7 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
     }
 
     console.log(`Resetting ${name}. ",
+        ${challengeData},
         "Interval=${intervalHrs}, ",
         "last=${formatDateTime(lastResetDate)}, ",
         "next=${formatDateTime(nextResetDate)}`);
