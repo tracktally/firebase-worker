@@ -6,65 +6,6 @@ admin.initializeApp({
     credential: admin.credential.cert(require("./secrets/service-account.json")),
 });
 
-
-async function runChallengeMaintanceMidnight(): Promise<void> {
-    
-    const db = admin.firestore();    
-    const challengesSnap = await db.collection("challenges").get();
-
-    const now = new Date();
-    const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    prev.setUTCDate(prev.getUTCDate() - 1);
-    const yyyy = prev.getUTCFullYear();
-    const mm = String(prev.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(prev.getUTCDate()).padStart(2, "0");
-    const dateId = `${yyyy}-${mm}-${dd}`;
-
-    for (const chDoc of challengesSnap.docs) {
-        const challengeId = chDoc.id;
-        const challengeData = chDoc.data() as { 
-          counter?: number
-          goalCounterUser?: number,
-          goalCounterChallenge?: number,
-        };
-        const teamTotal = challengeData?.counter ?? 0;
-        console.log("processing challenge", challengeId);
-
-        const dailyRef = db.doc(`challenges/${challengeId}/dailyStats/${dateId}`);
-        const exists = await dailyRef.get();
-        
-        if (exists.exists) {
-            console.warn(`dailyStats already exists for ${challengeId} ${dateId}; skipping.`);
-            continue;
-        }
-
-        const usersSnap = await db.collection(`challenges/${challengeId}/users`).get();
-        const usersTotals: Record<string, number> = {};
-        usersSnap.forEach((u) => {
-            const data = u.data() as { counter?: number };
-            usersTotals[u.id] = data?.counter ?? 0;
-        });
-
-        await dailyRef.set({
-            date: admin.firestore.Timestamp.fromDate(prev),
-            teamTotal,
-            users: usersTotals,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            goalCounterUser: challengeData.goalCounterUser,
-            goalCounterChallenge: challengeData.goalCounterChallenge,
-        },
-            { merge: true }
-        );
-
-        const batch = db.batch();
-        batch.update(chDoc.ref, { counter: 0 });
-        for (const u of usersSnap.docs) {
-            batch.update(u.ref, { counter: 0 });
-        }
-        await batch.commit();
-    }
-}
-
 function formatDateId(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -84,8 +25,11 @@ function formatDateTime(d: Date): string {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
 }
 
+
 async function runChallengeMaintenanceCustomInterval(): Promise<void> {
   console.log("Challenge maintenance started at", new Date().toString());
+  
+  const debug = false; // XXX: Watch out, setting this can loose data
 
   const db = admin.firestore();    
   const challengesSnap = await db.collection("challenges").get();
@@ -102,6 +46,7 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
       interval_hrs?: number;
       lastResetAt,
       resetTimeStr?: string;
+      goalCounterUser?: number,
     };
 
     const teamTotal = challengeData?.counter ?? 0;
@@ -118,19 +63,18 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
     const dailyRef = db.doc(`challenges/${challengeId}/dailyStats/${lastResetDateId}`);
     const exists = await dailyRef.get();
 
-    if (nextResetDate > now) {
+    if (nextResetDate > now && !debug) {
       // Not yet time
       continue;
     }
 
-    if (exists.exists) {
+    if (exists.exists && !debug) {
       // already resetted
       // console.warn(`dailyStats already exists for ${challengeId} ${name} ${lastResetDateId}; skipping.`);
       continue;
     }
 
     console.log(`Resetting ${name}. ",
-        ${challengeData},
         "Interval=${intervalHrs}, ",
         "last=${formatDateTime(lastResetDate)}, ",
         "next=${formatDateTime(nextResetDate)}`);
@@ -157,12 +101,55 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
       counter: 0,
       lastResetAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    const goalUser = challengeData?.goalCounterUser ?? 0;
+
     for (const u of usersSnap.docs) {
+      const d = u.data();
+      let counter = d?.counter ?? 0;
+      let partialStrike = d?.partialStrike ?? 0;
+      let fullStrike = d?.fullStrike ?? 0;
+      let totalCounter = (d?.totalCounter ?? 0) + counter;
+      let bestPartialStrike = d?.bestPartialStrike ?? 0;
+      let bestFullStrike = d?.bestFullStrike ?? 0;
+
+      bestPartialStrike = Math.max(bestPartialStrike, partialStrike);
+      bestFullStrike = Math.max(bestFullStrike, fullStrike);
+
+
+      if (counter >= goalUser) {
+        fullStrike += 1;
+      } else {
+        fullStrike = 0;
+        console.log(`  User ${u.id} (${d.name ?? ""}) looses full strike with ${counter} / ${goalUser}`);
+      }
+      
+      if (counter >= goalUser / 2) {
+        partialStrike += 1;
+      } else {
+        partialStrike = 0;
+        console.log(`  User ${u.id} (${d.name ?? ""}) looses partial strike with ${counter} / ${goalUser}`);
+      }
+
+      bestPartialStrike = Math.max(bestPartialStrike, partialStrike);
+      bestFullStrike = Math.max(bestFullStrike, fullStrike);
+
       batch.update(u.ref, {
          counter: 0 ,
+         
+         // stats
+         partialStrike: partialStrike,
+         fullStrike: fullStrike,
+         totalCounter: totalCounter,         
+         bestPartialStrike: bestPartialStrike,
+         bestFullStrike: bestFullStrike,
+         
+         // Reset goal tracking as well
          goalReachedAt: null,
          goalPartialReachedAt: null,
         });
+
+        // console.log(`  User ${u.id} (${d.name ?? ""}) did ${counter}, totalReps=${totalReps}, partialStrike=${partialStrike}, fullStrike=${fullStrike}`);
     }
     await batch.commit();
   }
