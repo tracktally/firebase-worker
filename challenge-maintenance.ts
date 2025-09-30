@@ -107,49 +107,49 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
     for (const u of usersSnap.docs) {
       const d = u.data();
       let counter = d?.counter ?? 0;
-      let partialStrike = d?.partialStrike ?? 0;
-      let fullStrike = d?.fullStrike ?? 0;
+      let partialStreak = d?.partialStreak ?? 0;
+      let fullStreak = d?.fullStreak ?? 0;
       let totalCounter = (d?.totalCounter ?? 0) + counter;
-      let bestPartialStrike = d?.bestPartialStrike ?? 0;
-      let bestFullStrike = d?.bestFullStrike ?? 0;
+      let bestPartialStreak = d?.bestPartialStreak ?? 0;
+      let bestFullStreak = d?.bestFullStreak ?? 0;
 
-      bestPartialStrike = Math.max(bestPartialStrike, partialStrike);
-      bestFullStrike = Math.max(bestFullStrike, fullStrike);
+      bestPartialStreak = Math.max(bestPartialStreak, partialStreak);
+      bestFullStreak = Math.max(bestFullStreak, fullStreak);
 
 
       if (counter >= goalUser) {
-        fullStrike += 1;
+        fullStreak += 1;
       } else {
-        fullStrike = 0;
-        console.log(`  User ${u.id} (${d.name ?? ""}) looses full strike with ${counter} / ${goalUser}`);
+        fullStreak = 0;
+        console.log(`  User ${u.id} (${d.name ?? ""}) looses full streak with ${counter} / ${goalUser}`);
       }
       
       if (counter >= goalUser / 2) {
-        partialStrike += 1;
+        partialStreak += 1;
       } else {
-        partialStrike = 0;
-        console.log(`  User ${u.id} (${d.name ?? ""}) looses partial strike with ${counter} / ${goalUser}`);
+        partialStreak = 0;
+        console.log(`  User ${u.id} (${d.name ?? ""}) looses partial streak with ${counter} / ${goalUser}`);
       }
 
-      bestPartialStrike = Math.max(bestPartialStrike, partialStrike);
-      bestFullStrike = Math.max(bestFullStrike, fullStrike);
+      bestPartialStreak = Math.max(bestPartialStreak, partialStreak);
+      bestFullStreak = Math.max(bestFullStreak, fullStreak);
 
       batch.update(u.ref, {
          counter: 0 ,
          
          // stats
-         partialStrike: partialStrike,
-         fullStrike: fullStrike,
+         partialStreak: partialStreak,
+         fullStreak: fullStreak,
          totalCounter: totalCounter,         
-         bestPartialStrike: bestPartialStrike,
-         bestFullStrike: bestFullStrike,
+         bestPartialStreak: bestPartialStreak,
+         bestFullStreak: bestFullStreak,
          
          // Reset goal tracking as well
          goalReachedAt: null,
          goalPartialReachedAt: null,
         });
 
-        // console.log(`  User ${u.id} (${d.name ?? ""}) did ${counter}, totalReps=${totalReps}, partialStrike=${partialStrike}, fullStrike=${fullStrike}`);
+        // console.log(`  User ${u.id} (${d.name ?? ""}) did ${counter}, totalReps=${totalReps}, partialStreak=${partialStreak}, fullStreak=${fullStreak}`);
     }
     await batch.commit();
   }
