@@ -197,7 +197,7 @@ const challengeMessageCallback: ChallengeCallback = (challenge, users, data) => 
 async function runChallengeMaintenanceCustomInterval(): Promise<void> {
   console.log("Challenge maintenance started at", new Date().toString());
 
-  const debug = true; // XXX: Watch out, setting this can loose data
+  const debug = false; // XXX: Watch out, setting this can loose data
 
   const db = admin.firestore();
   const challengesSnap = await db.collection("challenges").get();
