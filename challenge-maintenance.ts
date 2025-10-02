@@ -1,6 +1,6 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
-import { getResetDates } from "./util";
+import { getResetDates, normalizeDate } from "./util";
 
 admin.initializeApp({
   credential: admin.credential.cert(require("./secrets/service-account.json")),
@@ -76,6 +76,121 @@ function updateStreaks(
     bestPartialStreak,
     bestFullStreak,
   };
+}
+
+type ChallengeCallback = (challenge: {
+  id: string;
+  name: string;
+  counter: number;
+
+  goalCounterUser?: number,
+  goalCounterChallenge?: number,
+
+  // stats
+  partialStreak?: number
+  fullStreak?: number,
+  totalCounter?: number,
+  bestPartialStreak?: number,
+  bestFullStreak?: number,
+},
+  users: { id: string; name?: string; counter: number; lastActivityAt?: Date, goalReachedAt?: Date }[],
+  data: {
+    date: string;
+    lostPartialStreaks: string[];
+    lostFullStreaks: string[];
+    fullStreaks: { name?: string; fullStreak: number }[];
+    partialStreaks: { name?: string; partialStreak: number }[];
+  }) => string | Promise<void>;
+
+
+const challengeMessageCallback: ChallengeCallback = (challenge, users, data) => {
+  let msg = `*${data.date}* 🏆\n\n`;
+  msg += `Team: ${challenge.counter} / ${challenge.goalCounterChallenge}\n\n`;
+
+  let sorted = users.sort((a, b) => {
+    const aTime = normalizeDate(a.goalReachedAt)?.getTime() ?? null;
+    const bTime = normalizeDate(b.goalReachedAt)?.getTime() ?? null;
+    if (aTime && bTime) return aTime - bTime;
+    if (aTime && !bTime) return -1;
+    if (!aTime && bTime) return 1;
+
+    if (a.counter !== b.counter) {
+      return b.counter - a.counter;
+    }
+
+    const aAct = normalizeDate(a.lastActivityAt)?.getTime() ?? 0;
+    const bAct = normalizeDate(b.lastActivityAt)?.getTime() ?? 0;
+    return bAct - aAct;
+  }).filter(u => u.counter > 0)
+    .slice(0, 10);
+
+  msg += "📊 *Top Players:*\n";
+
+  if (sorted.length === 0) {
+    msg += "- No participation\n";
+  } else {
+
+    sorted.forEach((u, i) => {
+      const getFullStreak = (s: number) => s > 0 ? `🌗: ${s}` : "";
+      const getPartialStreak = (s: number) => s > 0 ? `🔥: ${s}` : "";
+      const getStreak = (u) => u.fullStreak && u.fullStreak > 0
+        || u.partialStreak && u.partialStreak > 0 ?
+        `(${getFullStreak(u.fullStreak ?? 0)} ${getPartialStreak(u.partialStreak ?? 0)})` : "";
+
+      const getPos = (i) => i === 0
+        ? "🥇"
+        : i === 1
+          ? "🥈"
+          : i === 2
+            ? "🥉"
+            : i + 1;
+      msg += `- ${getPos(i)} ${u.name}: ${u.counter} ${getStreak(u)}\n`;
+    });
+
+  }
+
+  // longest full streak
+  let fullStreaks = data.fullStreaks.filter(s => s.fullStreak > 0)
+    .sort((a, b) => b.fullStreak - a.fullStreak);
+
+  if (fullStreaks.length > 0) {
+    let max = fullStreaks[0].fullStreak;
+    msg += "\n🔥 *Longest Full Streaks:*\n";
+    fullStreaks.forEach(s => {
+      if (s.fullStreak === max) {
+        msg += `- ${s.name}: ${s.fullStreak}\n`;
+      }
+    });
+  }
+
+  let partialStreaks = data.partialStreaks.filter(s => s.partialStreak > 0)
+    .sort((a, b) => b.partialStreak - a.partialStreak);
+
+  if (partialStreaks.length > 0) {
+    let max = partialStreaks[0].partialStreak;
+    msg += "\n🌗 *Longest Partial Streaks:*\n";
+    partialStreaks.forEach(s => {
+      if (s.partialStreak === max) {
+        msg += `- ${s.name}: ${s.partialStreak}\n`;
+      }
+    });
+  }
+
+  if (data.lostFullStreaks.length > 0) {
+    msg += "\n\n🔥 *Lost Full Streaks:* 💔\n";
+    data.lostPartialStreaks.forEach(s => {
+      msg += `- ${s}\n`;
+    });
+  }
+
+  if (data.lostPartialStreaks.length > 0) {
+    msg += "\n🌗 *Lost Partial Streaks:* 💔\n"
+    data.lostPartialStreaks.forEach(s => {
+      msg += `- ${s}\n`;
+    });
+  }
+
+  return msg;
 }
 
 
@@ -194,17 +309,27 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
 
     const goalUser = challengeData?.goalCounterUser ?? 0;
 
+    let users = [];
+    let partialLostStreaks = [];
+    let fullLostStreaks = [];
+    let partialStreaks = [];
+    let fullStreaks = [];
+
     for (const u of usersSnap.docs) {
       const d = u.data();
+      users.push({ id: u.id, ...(d as any) });
+
       let { counter, totalCounter, partialStreak,
         fullStreak, bestPartialStreak,
         bestFullStreak } = updateStreaks(d, goalUser);
 
       if (d.partialStreak && d.partialStreak > 0 && partialStreak == 0) {
         console.log(`  User ${u.id} (${d.name ?? ""}) lost partial streak of ${d.partialStreak}`);
+        partialLostStreaks.push(`${d.name} (ended at ${d.partialStreak})`);
       }
       if (d.fullStreak && d.fullStreak > 0 && fullStreak == 0) {
         console.log(`  User ${u.id} (${d.name ?? ""}) lost full streak of ${d.fullStreak}`);
+        fullLostStreaks.push(`${d.name} (ended at ${d.fullStreak})`);
       }
 
       batch.update(u.ref, {
@@ -222,15 +347,25 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
         goalPartialReachedAt: null,
       });
 
+      fullStreaks.push({ name: d.name, fullStreak: fullStreak });
+      partialStreaks.push({ name: d.name, partialStreak: partialStreak });
+
       // console.log(`  User ${u.id} (${d.name ?? ""}) did ${counter}, totalReps=${totalReps}, partialStreak=${partialStreak}, fullStreak=${fullStreak}`);
+      let msg = challengeMessageCallback(challengeData as any,
+        users, {
+        date: `${lastResetDateId}`,
+        lostPartialStreaks: partialLostStreaks,
+        lostFullStreaks: fullLostStreaks,
+        fullStreaks,
+        partialStreaks
+      });
+      console.log("\n\n" + msg + "\n\n");
     }
     await batch.commit();
   }
 
   console.log("Challenge maintenance finished at", new Date().toString());
 }
-
-
 
 
 runChallengeMaintenanceCustomInterval()
