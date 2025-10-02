@@ -25,11 +25,64 @@ function formatDateTime(d: Date): string {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
 }
 
+function updateStreaks(
+  d: {
+    counter?: number;
+    partialStreak?: number;
+    fullStreak?: number;
+    totalCounter?: number;
+    bestPartialStreak?: number;
+    bestFullStreak?: number;
+  },
+  goal: number,
+): {
+  counter: number;
+  totalCounter: number;
+  partialStreak: number;
+  fullStreak: number;
+  bestPartialStreak: number;
+  bestFullStreak: number;
+} {
+  let counter = d.counter ?? 0;
+  let partialStreak = d.partialStreak ?? 0;
+  let fullStreak = d.fullStreak ?? 0;
+  let totalCounter = (d.totalCounter ?? 0) + counter;
+  let bestPartialStreak = d.bestPartialStreak ?? 0;
+  let bestFullStreak = d.bestFullStreak ?? 0;
+
+  bestPartialStreak = Math.max(bestPartialStreak, partialStreak);
+  bestFullStreak = Math.max(bestFullStreak, fullStreak);
+
+  if (counter >= goal) {
+    fullStreak += 1;
+  } else {
+    fullStreak = 0;
+  }
+
+  if (counter >= goal / 2) {
+    partialStreak += 1;
+  } else {
+    partialStreak = 0;
+  }
+
+  bestPartialStreak = Math.max(bestPartialStreak, partialStreak);
+  bestFullStreak = Math.max(bestFullStreak, fullStreak);
+
+  return {
+    counter,
+    totalCounter,
+    partialStreak,
+    fullStreak,
+    bestPartialStreak,
+    bestFullStreak,
+  };
+}
+
 
 async function runChallengeMaintenanceCustomInterval(): Promise<void> {
   console.log("Challenge maintenance started at", new Date().toString());
   
-  const debug = false; // XXX: Watch out, setting this can loose data
+  const debug = true; // XXX: Watch out, setting this can loose data
 
   const db = admin.firestore();    
   const challengesSnap = await db.collection("challenges").get();
@@ -47,6 +100,14 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
       lastResetAt,
       resetTimeStr?: string;
       goalCounterUser?: number,
+      goalCounterChallenge?: number,
+
+      // stats
+      partialStreak?: number
+      fullStreak?: number,
+      totalCounter?: number,
+      bestPartialStreak?: number,
+      bestFullStreak?: number,
     };
 
     const teamTotal = challengeData?.counter ?? 0;
@@ -79,6 +140,22 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
         "last=${formatDateTime(lastResetDate)}, ",
         "next=${formatDateTime(nextResetDate)}`);
 
+
+    let {counter, totalCounter, partialStreak, 
+        fullStreak, bestPartialStreak, 
+        bestFullStreak} = updateStreaks(challengeData,
+          challengeData?.goalCounterChallenge
+        );
+
+      if (challengeData.partialStreak && challengeData.partialStreak > 0 && partialStreak == 0) {
+        console.log(`  Challenge (${challengeData.name ?? ""}) `, 
+          `lost partial streak of ${challengeData.partialStreak}`);
+      }
+      if (challengeData.fullStreak && challengeData.fullStreak > 0 && fullStreak == 0) {
+        console.log(`  Challenge (${challengeData.name ?? ""})`,
+          `lost full streak of ${challengeData.fullStreak}`);
+      }
+
     // Collect user totals
     const usersSnap = await db.collection(`challenges/${challengeId}/users`).get();
     const usersTotals: Record<string, number> = {};
@@ -93,6 +170,8 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
       teamTotal,
       users: usersTotals,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      goalCounterUser: challengeData?.goalCounterUser ?? 0,
+      goalCounterChallenge: challengeData?.goalCounterChallenge ?? 0
     }, { merge: true });
 
     // Reset counters in a batch
@@ -100,39 +179,33 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
     batch.update(chDoc.ref, { 
       counter: 0,
       lastResetAt: admin.firestore.FieldValue.serverTimestamp(),
+      
+      // stats
+      partialStreak: partialStreak,
+      fullStreak: fullStreak,
+      totalCounter: totalCounter,         
+      bestPartialStreak: bestPartialStreak,
+      bestFullStreak: bestFullStreak,
+    
+      goalReachedAt: null,
+      goalPartialReachedAt: null,
+
     });
 
     const goalUser = challengeData?.goalCounterUser ?? 0;
 
     for (const u of usersSnap.docs) {
       const d = u.data();
-      let counter = d?.counter ?? 0;
-      let partialStreak = d?.partialStreak ?? 0;
-      let fullStreak = d?.fullStreak ?? 0;
-      let totalCounter = (d?.totalCounter ?? 0) + counter;
-      let bestPartialStreak = d?.bestPartialStreak ?? 0;
-      let bestFullStreak = d?.bestFullStreak ?? 0;
+      let {counter, totalCounter, partialStreak, 
+        fullStreak, bestPartialStreak, 
+        bestFullStreak} = updateStreaks(d, goalUser);
 
-      bestPartialStreak = Math.max(bestPartialStreak, partialStreak);
-      bestFullStreak = Math.max(bestFullStreak, fullStreak);
-
-
-      if (counter >= goalUser) {
-        fullStreak += 1;
-      } else {
-        fullStreak = 0;
-        console.log(`  User ${u.id} (${d.name ?? ""}) looses full streak with ${counter} / ${goalUser}`);
+      if (d.partialStreak && d.partialStreak > 0 && partialStreak == 0) {
+        console.log(`  User ${u.id} (${d.name ?? ""}) lost partial streak of ${d.partialStreak}`);
       }
-      
-      if (counter >= goalUser / 2) {
-        partialStreak += 1;
-      } else {
-        partialStreak = 0;
-        console.log(`  User ${u.id} (${d.name ?? ""}) looses partial streak with ${counter} / ${goalUser}`);
+      if (d.fullStreak && d.fullStreak > 0 && fullStreak == 0) {
+        console.log(`  User ${u.id} (${d.name ?? ""}) lost full streak of ${d.fullStreak}`);
       }
-
-      bestPartialStreak = Math.max(bestPartialStreak, partialStreak);
-      bestFullStreak = Math.max(bestFullStreak, fullStreak);
 
       batch.update(u.ref, {
          counter: 0 ,
