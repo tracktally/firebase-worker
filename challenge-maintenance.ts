@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { getResetDates } from "./util";
 
 admin.initializeApp({
-    credential: admin.credential.cert(require("./secrets/service-account.json")),
+  credential: admin.credential.cert(require("./secrets/service-account.json")),
 });
 
 function formatDateId(d: Date): string {
@@ -81,20 +81,20 @@ function updateStreaks(
 
 async function runChallengeMaintenanceCustomInterval(): Promise<void> {
   console.log("Challenge maintenance started at", new Date().toString());
-  
+
   const debug = true; // XXX: Watch out, setting this can loose data
 
-  const db = admin.firestore();    
+  const db = admin.firestore();
   const challengesSnap = await db.collection("challenges").get();
 
   const now = new Date();
-  const yesterdayMidnight = 
-      new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const yesterdayMidnight =
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
 
   for (const chDoc of challengesSnap.docs) {
     const challengeId = chDoc.id;
     const challengeData = chDoc.data() as {
-      name?: string;  
+      name?: string;
       counter?: number;
       interval_hrs?: number;
       lastResetAt,
@@ -113,7 +113,7 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
     const teamTotal = challengeData?.counter ?? 0;
     const name = challengeData.name ?? "<unknown>";
 
-    const {lastResetDate, nextResetDate, intervalHrs} = getResetDates(challengeData, now);
+    const { lastResetDate, nextResetDate, intervalHrs } = getResetDates(challengeData, now);
 
     /*
      * reset date is either midnight if no data in firebase
@@ -141,20 +141,20 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
         "next=${formatDateTime(nextResetDate)}`);
 
 
-    let {counter, totalCounter, partialStreak, 
-        fullStreak, bestPartialStreak, 
-        bestFullStreak} = updateStreaks(challengeData,
-          challengeData?.goalCounterChallenge
-        );
+    let { counter, totalCounter, partialStreak,
+      fullStreak, bestPartialStreak,
+      bestFullStreak } = updateStreaks(challengeData,
+        challengeData?.goalCounterChallenge
+      );
 
-      if (challengeData.partialStreak && challengeData.partialStreak > 0 && partialStreak == 0) {
-        console.log(`  Challenge (${challengeData.name ?? ""}) `, 
-          `lost partial streak of ${challengeData.partialStreak}`);
-      }
-      if (challengeData.fullStreak && challengeData.fullStreak > 0 && fullStreak == 0) {
-        console.log(`  Challenge (${challengeData.name ?? ""})`,
-          `lost full streak of ${challengeData.fullStreak}`);
-      }
+    if (challengeData.partialStreak && challengeData.partialStreak > 0 && partialStreak == 0) {
+      console.log(`  Challenge (${challengeData.name ?? ""}) `,
+        `lost partial streak of ${challengeData.partialStreak}`);
+    }
+    if (challengeData.fullStreak && challengeData.fullStreak > 0 && fullStreak == 0) {
+      console.log(`  Challenge (${challengeData.name ?? ""})`,
+        `lost full streak of ${challengeData.fullStreak}`);
+    }
 
     // Collect user totals
     const usersSnap = await db.collection(`challenges/${challengeId}/users`).get();
@@ -176,17 +176,17 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
 
     // Reset counters in a batch
     const batch = db.batch();
-    batch.update(chDoc.ref, { 
+    batch.update(chDoc.ref, {
       counter: 0,
       lastResetAt: admin.firestore.FieldValue.serverTimestamp(),
-      
+
       // stats
       partialStreak: partialStreak,
       fullStreak: fullStreak,
-      totalCounter: totalCounter,         
+      totalCounter: totalCounter,
       bestPartialStreak: bestPartialStreak,
       bestFullStreak: bestFullStreak,
-    
+
       goalReachedAt: null,
       goalPartialReachedAt: null,
 
@@ -196,9 +196,9 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
 
     for (const u of usersSnap.docs) {
       const d = u.data();
-      let {counter, totalCounter, partialStreak, 
-        fullStreak, bestPartialStreak, 
-        bestFullStreak} = updateStreaks(d, goalUser);
+      let { counter, totalCounter, partialStreak,
+        fullStreak, bestPartialStreak,
+        bestFullStreak } = updateStreaks(d, goalUser);
 
       if (d.partialStreak && d.partialStreak > 0 && partialStreak == 0) {
         console.log(`  User ${u.id} (${d.name ?? ""}) lost partial streak of ${d.partialStreak}`);
@@ -208,21 +208,21 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
       }
 
       batch.update(u.ref, {
-         counter: 0 ,
-         
-         // stats
-         partialStreak: partialStreak,
-         fullStreak: fullStreak,
-         totalCounter: totalCounter,         
-         bestPartialStreak: bestPartialStreak,
-         bestFullStreak: bestFullStreak,
-         
-         // Reset goal tracking as well
-         goalReachedAt: null,
-         goalPartialReachedAt: null,
-        });
+        counter: 0,
 
-        // console.log(`  User ${u.id} (${d.name ?? ""}) did ${counter}, totalReps=${totalReps}, partialStreak=${partialStreak}, fullStreak=${fullStreak}`);
+        // stats
+        partialStreak: partialStreak,
+        fullStreak: fullStreak,
+        totalCounter: totalCounter,
+        bestPartialStreak: bestPartialStreak,
+        bestFullStreak: bestFullStreak,
+
+        // Reset goal tracking as well
+        goalReachedAt: null,
+        goalPartialReachedAt: null,
+      });
+
+      // console.log(`  User ${u.id} (${d.name ?? ""}) did ${counter}, totalReps=${totalReps}, partialStreak=${partialStreak}, fullStreak=${fullStreak}`);
     }
     await batch.commit();
   }
@@ -234,11 +234,11 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
 
 
 runChallengeMaintenanceCustomInterval()
-    .then(() => {
-        console.log("Daily rollup finished");
-        process.exit(0);
-    })
-    .catch((err) => {
-        console.error("Error running rollup", err);
-        process.exit(1);
-    });
+  .then(() => {
+    console.log("Daily rollup finished");
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Error running rollup", err);
+    process.exit(1);
+  });
