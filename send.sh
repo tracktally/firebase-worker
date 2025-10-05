@@ -4,8 +4,8 @@ set -euo pipefail
 set -x
 session="challenge"
 key='$2b$10$L1vRtms9R0iwdje7EzxhnOejYp_8ouhTugpenGtyMoo3IQYBMu.3S'
-host="http://localhost:21465"
-# host="http://192.168.178.30:21465"
+# host="http://localhost:21465"
+host="http://192.168.178.30:21465"
 set +x
 
 phone=""
