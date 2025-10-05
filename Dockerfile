@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends tini \
+RUN apt-get update && apt-get install -y --no-install-recommends tini jq \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

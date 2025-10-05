@@ -38,13 +38,7 @@ export function shouldNotify(challenge: any) {
     return false;
 }
 
-export function doNotify(message: string, debug=true) {
-    let script = "";
-    if (debug) {
-        script = "./send_test.sh";
-    } else {
-        script = "./send_message.sh";
-    }
+export function doNotify(message: string, script: string) {
     const args = [`${message}`];
 
     const child = spawn(script, args, { stdio: "inherit" });
@@ -130,7 +124,7 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
   }
 
   if (data.lostFullStreaks.length > 0) {
-    msg += "\n\n🔥 *Lost Full Streaks:* 💔\n";
+    msg += "\n🔥 *Lost Full Streaks:* 💔\n";
     data.lostPartialStreaks.forEach(s => {
       msg += `- ${s}\n`;
     });

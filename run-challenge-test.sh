@@ -22,7 +22,6 @@ if [ ! -d "node_modules" ]; then
   echo "Installing dependencies..."
   npm install
 fi
-set -x
 
-# npx ts-node ./run/challenge-run-no-notify.ts
-$SCRIPT_DIR/run-challenge-test.sh
+set -x
+npx ts-node ./run/challenge-run-test.ts

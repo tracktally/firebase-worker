@@ -79,10 +79,14 @@ function updateStreaks(
   };
 }
 
-async function runChallengeMaintenanceCustomInterval(): Promise<void> {
-  console.log("Challenge maintenance started at", new Date().toString());
+export async function runChallengeMaintenanceCustomInterval(
+  debug: boolean = false,
+  shouldNotify: (challenge: any) => boolean = null,
+  notify: (message: string) => void = null): Promise<void> {
+  console.log("Challenge maintenance started at", new Date().toString(), 
+              " debug=", debug);
 
-  const debug = false; // XXX: Watch out, setting this can loose data
+  // const debug = false; // XXX: Watch out, setting this can loose data
 
   const db = admin.firestore();
   const challengesSnap = await db.collection("challenges").get();
@@ -246,10 +250,10 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
         fullStreaks,
         partialStreaks
       });
-      console.log("\n\n" + msg + "\n\n");
+      // console.log("\n\n" + msg + "\n\n");
 
-      if (shouldNotify({id: challengeId, ...challengeData})) {
-        doNotify(msg);
+      if (shouldNotify && shouldNotify({id: challengeId, ...challengeData})) {
+        notify && notify(msg);
       }
       await batch.commit();
   }
@@ -257,13 +261,12 @@ async function runChallengeMaintenanceCustomInterval(): Promise<void> {
   console.log("Challenge maintenance finished at", new Date().toString());
 }
 
-
-runChallengeMaintenanceCustomInterval()
-  .then(() => {
-    console.log("Daily rollup finished");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("Error running rollup", err);
-    process.exit(1);
-  });
+// runChallengeMaintenanceCustomInterval()
+//   .then(() => {
+//     console.log("Daily rollup finished");
+//     process.exit(0);
+//   })
+//   .catch((err) => {
+//     console.error("Error running rollup", err);
+//     process.exit(1);
+//   });
