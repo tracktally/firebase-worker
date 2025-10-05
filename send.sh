@@ -2,11 +2,12 @@
 set -euo pipefail
 
 set -x
-session="mySession2"
-key='$2b$10$mnWMXITy6EXVrxMftAJlKuiioZOh2iPwqJlAezxrQ9cE7wCVJz.XK'
+session="challenge"
+key='$2b$10$EPHo.7JpNy5XTFVCBKKBweNFBt.WgQTLRZzcURM0s_blPwu7NrNxG'
+host="http://localhost:21465"
 set +x
 
-phone="120363421146964189"
+phone=""
 group=true
 message=""
 
@@ -55,7 +56,7 @@ payload=$(jq -n \
 
 
 set -x
-curl -X POST "http://localhost:21465/api/${session}/send-message" \
+curl -X POST "${host}/api/${session}/send-message" \
      -H 'accept: */*' \
      -H "Authorization: Bearer ${key}" \
      -H 'Content-Type: application/json' \
