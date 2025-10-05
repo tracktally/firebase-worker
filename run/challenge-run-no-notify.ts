@@ -5,9 +5,15 @@ import { challengeMessageCallback } from "../challenge-notify"
 import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
 import { spawn } from "child_process";
 
+
+let app = admin.initializeApp({
+  credential: admin.credential.cert(require("../secrets/service-account-challenge.json")),
+});
+
 const debug = false;
 
 runChallengeMaintenanceCustomInterval(
+  app,
   debug, /* debug */
   null, /* should notify */
   null /* do notify */ )

@@ -3,9 +3,6 @@ import * as admin from "firebase-admin";
 import { getResetDates, normalizeDate } from "./util";
 import {challengeMessageCallback, shouldNotify, doNotify} from "./challenge-notify"
 
-admin.initializeApp({
-  credential: admin.credential.cert(require("./secrets/service-account.json")),
-});
 
 function formatDateId(d: Date): string {
   const yyyy = d.getFullYear();
@@ -80,6 +77,7 @@ function updateStreaks(
 }
 
 export async function runChallengeMaintenanceCustomInterval(
+  app: admin.app.App,
   debug: boolean = false,
   shouldNotify: (challenge: any) => boolean = null,
   notify: (message: string) => void = null): Promise<void> {
@@ -88,7 +86,7 @@ export async function runChallengeMaintenanceCustomInterval(
 
   // const debug = false; // XXX: Watch out, setting this can loose data
 
-  const db = admin.firestore();
+  const db = app.firestore();
   const challengesSnap = await db.collection("challenges").get();
 
   const now = new Date();

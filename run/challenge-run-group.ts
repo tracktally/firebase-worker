@@ -31,9 +31,15 @@ function notify(message: string) {
 // run whatsapp group script
 // uses send_group to notify in production whatsapp group
 
+// tracktally-prod-firebase
+let app = admin.initializeApp({
+  credential: admin.credential.cert(require("../secrets/tracktally-prod-firebase.json")),
+});
+
 const debug = false;
 
 runChallengeMaintenanceCustomInterval(
+  app,
   debug, /* debug */
   shouldNotify,
   notify)

@@ -30,10 +30,14 @@ function notify(message: string) {
 
 // run test script
 // uses send_test to notify in test whatsapp group
+let app = admin.initializeApp({
+  credential: admin.credential.cert(require("../secrets/service-account-challenge.json")),
+});
 
 const debug = false;
 
 runChallengeMaintenanceCustomInterval(
+  app,
   debug, /* debug */
   shouldNotify,
   notify)
