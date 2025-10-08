@@ -88,8 +88,10 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
   let msg = `*${data.date}* 🏆\n\n`;
   msg += `*${challenge.name}:*\n`;
   msg += `Team: ${challenge.counter} / ${challenge.goalCounterChallenge}\n`;
-  msg += `Team Partial Streak: ${(challenge.partialStreak ?? 0) + 1}\n`;
-  msg += `Team Full Streak: ${(challenge.fullStreak ?? 0) + 1}\n\n`;
+  
+  // XXX: +1 already in streak counter for team
+  msg += `Team Partial Streak: ${(challenge.partialStreak ?? 0)}\n`;
+  msg += `Team Full Streak: ${(challenge.fullStreak ?? 0)}\n\n`;
    
 
   let sorted = users.sort((a, b) => {
