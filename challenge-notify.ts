@@ -87,8 +87,7 @@ const getTopFullStreaks = (
 export const challengeMessageCallback: ChallengeCallback = (challenge, users, data): string => {
   let msg = `*${data.date}* 🏆\n\n`;
   msg += `*${challenge.name}:*\n`;
-  msg += `Team: \n`;
-  msg += `- Reps: ${challenge.counter} / ${challenge.goalCounterChallenge}\n`;
+  msg += `- Team Reps: ${challenge.counter} / ${challenge.goalCounterChallenge}\n`;
   // XXX: +1 already in streak counter for team
   msg += `- Partial Streak: ${(challenge.partialStreak ?? 0)}\n`;
   msg += `- Full Streak: ${(challenge.fullStreak ?? 0)}\n\n`;
