@@ -88,6 +88,9 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
   let msg = `*${data.date}* 🏆\n\n`;
   msg += `*${challenge.name}:*\n`;
   msg += `Team: ${challenge.counter} / ${challenge.goalCounterChallenge}\n\n`;
+  msg += `Team Partial Streak: ${(challenge.partialStreak ?? 0) + 1}`
+  msg += `Team Full Streak: ${(challenge.fullStreak ?? 0) + 1}`
+   
 
   let sorted = users.sort((a, b) => {
     const aTime = normalizeDate(a.goalReachedAt)?.getTime() ?? null;
@@ -115,15 +118,16 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
     sorted.forEach((u, i) => {
       const getFullStreak = (s: number) => s > 0 ? `🌗: ${s}` : "";
       const getPartialStreak = (s: number) => s > 0 ? `🔥: ${s}` : "";
-      const getHigherStreak = (p: number, f: number) => {
+      const getHigherStreak = (f: number, p: number) => {
         return (f >= p) ? getFullStreak(f) : getPartialStreak(p);
       }
       
       // XXX: +1 to streak to reflect current streak including today
-      const getStreak = (u) => u.fullStreak && u.fullStreak >= 0
-        || u.partialStreak && u.partialStreak >= 0 ?
-        `(${getHigherStreak(1 + (u.fullStreak ?? 0), 1 + (u.partialStreak ?? 0))})` : "";
-
+      const getStreak = (u) => {
+        let f = (u.fullStreak ?? 0) + 1;
+        let p = (u.partialStreak ?? 0) + 1;
+        return `(${getHigherStreak(f, p)})`;
+      } 
       const getPos = (i) => i === 0
         ? "🥇"
         : i === 1
@@ -141,7 +145,7 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
     .sort((a, b) => b.fullStreak - a.fullStreak);
 
   if (fullStreaks.length > 0) {    
-    let max = getTopFullStreaks(fullStreaks, 3);
+    let max = getTopFullStreaks(fullStreaks, 2);
     msg += "\n🔥 *Longest Full Streaks:*\n";
     fullStreaks.forEach(s => {
       if (s.fullStreak >= max) {
@@ -154,10 +158,10 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
     .sort((a, b) => b.partialStreak - a.partialStreak);
 
   if (partialStreaks.length > 0) {
-    let max = getTopPartialStreaks(partialStreaks, 3);
+    let max = getTopPartialStreaks(partialStreaks, 2);
     msg += "\n🌗 *Longest Partial Streaks:*\n";
     partialStreaks.forEach(s => {
-      if (s.partialStreak === max) {
+      if (s.partialStreak >= max) {
         msg += `- ${s.name}: ${s.partialStreak}\n`;
       }
     });
