@@ -49,6 +49,41 @@ export function doNotify(message: string, script: string) {
     return;
 }
 
+// TODO: refactor full/partial streak to contain "streak" field
+const getTopPartialStreaks = (
+  streaks: { name?: string; partialStreak: number }[],
+  top: number) => {
+  let max = 0;
+  if (streaks.length > 0) {
+    let max = streaks[0].partialStreak;
+    let i = 0;
+    streaks.forEach(s => {
+      if (s.partialStreak < max && i < 3) {
+        max = s.partialStreak;
+        i++;
+      }
+    });
+  }
+  return max;
+}
+
+const getTopFullStreaks = (
+  streaks: { name?: string; fullStreak: number }[],
+  top: number) => {
+  let max = 0;
+  if (streaks.length > 0) {
+    let max = streaks[0].fullStreak;
+    let i = 0;
+    streaks.forEach(s => {
+      if (s.fullStreak < max && i < 3) {
+        max = s.fullStreak;
+        i++;
+      }
+    });
+  }
+  return max;
+}
+
 export const challengeMessageCallback: ChallengeCallback = (challenge, users, data): string => {
   let msg = `*${data.date}* 🏆\n\n`;
   msg += `*${challenge.name}:*\n`;
@@ -68,8 +103,8 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
     const aAct = normalizeDate(a.lastActivityAt)?.getTime() ?? 0;
     const bAct = normalizeDate(b.lastActivityAt)?.getTime() ?? 0;
     return bAct - aAct;
-  }).filter(u => u.counter > 0)
-    .slice(0, 10);
+  }).filter(u => u.counter > 0);
+    // .slice(0, 10);
 
   msg += "📊 *Top Players:*\n";
 
@@ -80,9 +115,14 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
     sorted.forEach((u, i) => {
       const getFullStreak = (s: number) => s > 0 ? `🌗: ${s}` : "";
       const getPartialStreak = (s: number) => s > 0 ? `🔥: ${s}` : "";
-      const getStreak = (u) => u.fullStreak && u.fullStreak > 0
-        || u.partialStreak && u.partialStreak > 0 ?
-        `(${getFullStreak(u.fullStreak ?? 0)} ${getPartialStreak(u.partialStreak ?? 0)})` : "";
+      const getHigherStreak = (p: number, f: number) => {
+        return (f >= p) ? getFullStreak(f) : getPartialStreak(p);
+      }
+      
+      // XXX: +1 to streak to reflect current streak including today
+      const getStreak = (u) => u.fullStreak && u.fullStreak >= 0
+        || u.partialStreak && u.partialStreak >= 0 ?
+        `(${getHigherStreak(1 + (u.fullStreak ?? 0), 1 + (u.partialStreak ?? 0))})` : "";
 
       const getPos = (i) => i === 0
         ? "🥇"
@@ -90,7 +130,7 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
           ? "🥈"
           : i === 2
             ? "🥉"
-            : i + 1;
+            : `${i + 1}.`;
       msg += `- ${getPos(i)} ${u.name}: ${u.counter} ${getStreak(u)}\n`;
     });
 
@@ -100,11 +140,11 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
   let fullStreaks = data.fullStreaks.filter(s => s.fullStreak > 0)
     .sort((a, b) => b.fullStreak - a.fullStreak);
 
-  if (fullStreaks.length > 0) {
-    let max = fullStreaks[0].fullStreak;
+  if (fullStreaks.length > 0) {    
+    let max = getTopFullStreaks(fullStreaks, 3);
     msg += "\n🔥 *Longest Full Streaks:*\n";
     fullStreaks.forEach(s => {
-      if (s.fullStreak === max) {
+      if (s.fullStreak >= max) {
         msg += `- ${s.name}: ${s.fullStreak}\n`;
       }
     });
@@ -114,7 +154,7 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
     .sort((a, b) => b.partialStreak - a.partialStreak);
 
   if (partialStreaks.length > 0) {
-    let max = partialStreaks[0].partialStreak;
+    let max = getTopPartialStreaks(partialStreaks, 3);
     msg += "\n🌗 *Longest Partial Streaks:*\n";
     partialStreaks.forEach(s => {
       if (s.partialStreak === max) {
