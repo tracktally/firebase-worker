@@ -10,7 +10,7 @@ const SEND_SCRIPT = __dirname + "/../scripts/send_group.sh";
 function shouldNotify(challenge: any) {
   console.log("should notify: ", challenge.id, challenge.name);
   // Test group
-  if (challenge.id == "") {
+  if (challenge.id == "XkROPB7880JnY05TcNCv") {
     console.log("\n\n=========== Sending message");
     return true;
   }
