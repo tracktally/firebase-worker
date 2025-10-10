@@ -13,4 +13,5 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 
 ENV TZ=Europe/Zurich
 
-CMD ["./run-challenge-maintenance.sh"]
+## default script
+CMD ["./run/run-test.sh"]

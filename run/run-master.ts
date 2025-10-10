@@ -1,10 +1,11 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
-import { getResetDates, normalizeDate } from "../util";
-import { challengeMessageCallback } from "../challenge-notify"
-import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
+import { getResetDates, normalizeDate } from "../src/util";
+import { challengeMessageCallback } from "../src/challenge-notify"
+import { runChallengeMaintenanceCustomInterval } from "../src/challenge-maintenance"
 import { spawn } from "child_process";
 
+const SEND_SCRIPT = __dirname + "/../scripts/send_group.sh";
 
 function shouldNotify(challenge: any) {
   console.log("should notify: ", challenge.id, challenge.name);
@@ -17,11 +18,11 @@ function shouldNotify(challenge: any) {
 }
 
 function notify(message: string) {
-  let script = __dirname + "/../send_group.sh";
+  let script = SEND_SCRIPT;
   const args = [`${message}`];
 
   const child = spawn(script, args, { stdio: "inherit" });
-
+  
   child.on("close", (code) => {
     console.log(`Script exited with code ${code}`);
   });

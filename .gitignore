@@ -4,3 +4,6 @@ service-account.json
 secrets/*
 secretslog.txt
 log.txt
+log-*.txt
+tmp
+secret

@@ -1,9 +1,7 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
-import { getResetDates, normalizeDate } from "../util";
-import { challengeMessageCallback } from "../challenge-notify"
-import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
-import { spawn } from "child_process";
+
+import { runChallengeMaintenanceCustomInterval } from "../src/challenge-maintenance"
 
 
 let app = admin.initializeApp({
@@ -15,8 +13,8 @@ const debug = false;
 runChallengeMaintenanceCustomInterval(
   app,
   debug, /* debug */
-  null, /* should notify */
-  null /* do notify */ )
+  null /* shouldNotify */,
+  null /* notify */ )
   .then(() => {
     console.log("Daily rollup finished");
     process.exit(0);
