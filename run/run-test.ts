@@ -10,7 +10,9 @@ const SEND_SCRIPT = __dirname + "/../scripts/send_test.sh";
 function shouldNotify(challenge: any) {
   console.log("should notify: ", challenge.id, challenge.name);
   // Test group
-  if (challenge.id == "rR3NHPGYsPtZ1fXEsWCT") {
+  //  
+  // challenge rR3NHPGYsPtZ1fXEsWCT
+  if (challenge.id == "W5jNVClMPSiyaeY2HdBh") {
     console.log("\n\n=========== Sending message");
     return true;
   }
@@ -35,7 +37,7 @@ let app = admin.initializeApp({
   credential: admin.credential.cert(require("../secrets/service-account-challenge.json")),
 });
 
-const debug = false;
+const debug = true;
 
 runChallengeMaintenanceCustomInterval(
   app,
