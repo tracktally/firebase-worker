@@ -84,8 +84,6 @@ export async function runChallengeMaintenanceCustomInterval(
   console.log("Challenge maintenance started at", new Date().toString(), 
               " debug=", debug);
 
-  // const debug = false; // XXX: Watch out, setting this can loose data
-
   const db = app.firestore();
   const challengesSnap = await db.collection("challenges").get();
 
@@ -133,7 +131,6 @@ export async function runChallengeMaintenanceCustomInterval(
 
     if (exists.exists && !debug) {
       // already resetted
-      // console.warn(`dailyStats already exists for ${challengeId} ${name} ${lastResetDateId}; skipping.`);
       continue;
     }
 
@@ -214,8 +211,8 @@ export async function runChallengeMaintenanceCustomInterval(
         bestFullStreak } = updateStreaks(d, goalUser);
 
       
-      /* TODO: we do the reset logic here eventhough it is better
-       *       done when when to the message generation.
+      /* TODO: refactor: we do the reset logic here eventhough it is better
+       *       done during the message generation.
        *       for this we now keep anyway two copies of the user and challenge.
        *       updateUser and updateChallenge
        */ 

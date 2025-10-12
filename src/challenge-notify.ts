@@ -200,7 +200,7 @@ export const challengeMessageCallback: ChallengeCallback = (
 
   if (data.lostFullStreaks.length > 0) {
     msg += "\n💔 *Lost Full Streaks:*\n";
-    data.lostPartialStreaks.forEach(s => {
+    data.lostFullStreaks.forEach(s => {
       msg += `- ${s}\n`;
     });
   }
