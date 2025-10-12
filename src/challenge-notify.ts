@@ -104,8 +104,8 @@ const getStreaksForUser = (id: string, updatedUsers: any[]) => {
 export const challengeMessageCallback: ChallengeCallback = (
   challenge, updatedChallenge,
   users, updatedUsers, data): string => {
-  let msg = `*${data.date}* 🏆\n\n`;
-  msg += `*${challenge.name}:*\n`;
+  let msg = `*${data.date}* \n\n`;
+  msg += `🏆 *${challenge.name}:*\n`;
   msg += `- Team Reps: ${challenge.counter} / ${challenge.goalCounterChallenge}\n`;
   
   const isChallengePartialLost = 
@@ -199,14 +199,14 @@ export const challengeMessageCallback: ChallengeCallback = (
   }
 
   if (data.lostFullStreaks.length > 0) {
-    msg += "\n🔥 *Lost Full Streaks:* 💔\n";
+    msg += "\n💔 *Lost Full Streaks:*\n";
     data.lostPartialStreaks.forEach(s => {
       msg += `- ${s}\n`;
     });
   }
 
   if (data.lostPartialStreaks.length > 0) {
-    msg += "\n🌗 *Lost Partial Streaks:* 💔\n"
+    msg += "\n💔 *Lost Partial Streaks:*\n"
     data.lostPartialStreaks.forEach(s => {
       msg += `- ${s}\n`;
     });
