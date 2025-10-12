@@ -1,7 +1,7 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
 import { getResetDates, normalizeDate } from "./util";
-import {challengeMessageCallback, shouldNotify, doNotify} from "./challenge-notify"
+import {challengeMessageCallback} from "./challenge-notify"
 
 
 function formatDateId(d: Date): string {
@@ -178,7 +178,7 @@ export async function runChallengeMaintenanceCustomInterval(
 
     // Reset counters in a batch
     const batch = db.batch();
-    batch.update(chDoc.ref, {
+    let updateChallengeData = {
       counter: 0,
       lastResetAt: admin.firestore.FieldValue.serverTimestamp(),
 
@@ -192,11 +192,14 @@ export async function runChallengeMaintenanceCustomInterval(
       goalReachedAt: null,
       goalPartialReachedAt: null,
 
-    });
+    };
+    batch.update(chDoc.ref, updateChallengeData);
+    updateChallengeData = { ...challengeData, ...updateChallengeData };
 
     const goalUser = challengeData?.goalCounterUser ?? 0;
 
-    let users = [];
+    let users = []; // users before db update
+    let updatedUsers = []; // users after db update
     let partialLostStreaks = [];
     let fullLostStreaks = [];
     let partialStreaks = [];
@@ -210,6 +213,12 @@ export async function runChallengeMaintenanceCustomInterval(
         fullStreak, bestPartialStreak,
         bestFullStreak } = updateStreaks(d, goalUser);
 
+      
+      /* TODO: we do the reset logic here eventhough it is better
+       *       done when when to the message generation.
+       *       for this we now keep anyway two copies of the user and challenge.
+       *       updateUser and updateChallenge
+       */ 
       if (d.partialStreak && d.partialStreak > 0 && partialStreak == 0) {
         console.log(`  User ${u.id} (${d.name ?? ""}) lost partial streak of ${d.partialStreak}`);
         partialLostStreaks.push(`${d.name} (ended at ${d.partialStreak})`);
@@ -219,7 +228,7 @@ export async function runChallengeMaintenanceCustomInterval(
         fullLostStreaks.push(`${d.name} (ended at ${d.fullStreak})`);
       }
 
-      batch.update(u.ref, {
+      const updateUser = {
         counter: 0,
 
         // stats
@@ -232,7 +241,9 @@ export async function runChallengeMaintenanceCustomInterval(
         // Reset goal tracking as well
         goalReachedAt: null,
         goalPartialReachedAt: null,
-      });
+      }
+      batch.update(u.ref, updateUser);
+      updatedUsers.push({ id: u.id, ...d, ...updateUser });
 
       fullStreaks.push({ name: d.name, fullStreak: fullStreak });
       partialStreaks.push({ name: d.name, partialStreak: partialStreak });
@@ -240,15 +251,17 @@ export async function runChallengeMaintenanceCustomInterval(
       // console.log(`  User ${u.id} (${d.name ?? ""}) did ${counter}, totalReps=${totalReps}, partialStreak=${partialStreak}, fullStreak=${fullStreak}`);
     }
     
-    let msg: string = challengeMessageCallback(challengeData as any,
-        users, {
+    let msg: string = challengeMessageCallback(
+        challengeData as any,
+        updateChallengeData as any,
+        users,
+        updatedUsers, {
         date: `${lastResetDateId}`,
         lostPartialStreaks: partialLostStreaks,
         lostFullStreaks: fullLostStreaks,
         fullStreaks,
         partialStreaks
       });
-      // console.log("\n\n" + msg + "\n\n");
 
       if (shouldNotify && shouldNotify({id: challengeId, ...challengeData})) {
         notify && notify(msg);
@@ -258,13 +271,3 @@ export async function runChallengeMaintenanceCustomInterval(
 
   console.log("Challenge maintenance finished at", new Date().toString());
 }
-
-// runChallengeMaintenanceCustomInterval()
-//   .then(() => {
-//     console.log("Daily rollup finished");
-//     process.exit(0);
-//   })
-//   .catch((err) => {
-//     console.error("Error running rollup", err);
-//     process.exit(1);
-//   });

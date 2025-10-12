@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { getResetDates, normalizeDate } from "./util";
 import { spawn } from "child_process";
 
-
+// TODO: refactor users to their own type
 export type ChallengeCallback = (challenge: {
   id: string;
   name: string;
@@ -19,7 +19,9 @@ export type ChallengeCallback = (challenge: {
   bestPartialStreak?: number,
   bestFullStreak?: number,
 },
+  updatedChallenge: any,
   users: { id: string; name?: string; counter: number; lastActivityAt?: Date, goalReachedAt?: Date }[],
+  updatedUsers: { id: string; name?: string; counter: number; lastActivityAt?: Date, goalReachedAt?: Date }[],
   data: {
     date: string;
     lostPartialStreaks: string[];
@@ -29,24 +31,19 @@ export type ChallengeCallback = (challenge: {
   }) => string;
 
 
-export function shouldNotify(challenge: any) {
-    // Test group
-    if (challenge.id == "rR3NHPGYsPtZ1fXEsWCT") {
-        console.log("\n\n=========== Sending message");
-        return true;
-    }
-    return false;
-}
 
-export function doNotify(message: string, script: string) {
-    const args = [`${message}`];
-
-    const child = spawn(script, args, { stdio: "inherit" });
-
-    child.on("close", (code) => {
-        console.log(`Script exited with code ${code}`);
-    });
-    return;
+// given streaks with either full or partial streak, convert to common format
+const convertStreaks = (
+  streaks: 
+  { name?: string;
+    fullStreak?: number
+    partialStreak?: number
+  }[]) => {
+  return streaks.map(s => ({
+    name: s.name,
+    streak: (s.fullStreak != undefined && s.fullStreak != null)
+       ? s.fullStreak : s.partialStreak, 
+  }));
 }
 
 // TODO: refactor full/partial streak to contain "streak" field
@@ -84,13 +81,43 @@ const getTopFullStreaks = (
   return max;
 }
 
-export const challengeMessageCallback: ChallengeCallback = (challenge, users, data): string => {
+const getStreaksForUser = (id: string, updatedUsers: any[]) => {
+  let user = updatedUsers.find(u => u.id == id);
+  const found = {
+    user: null,
+    found: false,
+    fullStreak: 0,
+    partialStreak: 0,
+  };
+
+  if (user) {
+    found.user = user;
+    found.found = true;
+    found.fullStreak = user.fullStreak ?? 0;
+    found.partialStreak = user.partialStreak ?? 0;
+  }
+  return found;
+}
+
+// XXX: users: contains update stats
+// while data contains additional info like lost streaks
+export const challengeMessageCallback: ChallengeCallback = (
+  challenge, updatedChallenge,
+  users, updatedUsers, data): string => {
   let msg = `*${data.date}* 🏆\n\n`;
   msg += `*${challenge.name}:*\n`;
   msg += `- Team Reps: ${challenge.counter} / ${challenge.goalCounterChallenge}\n`;
-  // XXX: +1 already in streak counter for team
-  msg += `- Partial Streak: ${(challenge.partialStreak ?? 0)}\n`;
-  msg += `- Full Streak: ${(challenge.fullStreak ?? 0)}\n\n`;
+  
+  const isChallengePartialLost = 
+    (challenge.partialStreak ?? 0) > 0 && (updatedChallenge.partialStreak ?? 0) == 0;
+  const isChallengeFullLost = 
+    (challenge.fullStreak ?? 0) > 0 && (updatedChallenge.fullStreak ?? 0) == 0;
+  
+  let msgChallengePatial = isChallengePartialLost ? " 💔" : "";
+  let msgChallengeFull = isChallengeFullLost ? " 💔" : "";
+
+  msg += `- Partial Streak: ${(updatedChallenge.partialStreak ?? 0)} ${msgChallengePatial}\n`;
+  msg += `- Full Streak: ${(updatedChallenge.fullStreak ?? 0)} ${msgChallengeFull}\n\n`;
    
 
   let sorted = users.sort((a, b) => {
@@ -117,17 +144,16 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
   } else {
 
     sorted.forEach((u, i) => {
-      const getFullStreak = (s: number) => s > 0 ? `🌗: ${s}` : "";
-      const getPartialStreak = (s: number) => s > 0 ? `🔥: ${s}` : "";
+      const getFullStreak = (s: number) => s > 0 ? `(🔥: ${s})` : "";
+      const getPartialStreak = (s: number) => s > 0 ? `(🌗: ${s})` : "";
       const getHigherStreak = (f: number, p: number) => {
         return (f >= p) ? getFullStreak(f) : getPartialStreak(p);
       }
       
-      // XXX: +1 to streak to reflect current streak including today
       const getStreak = (u) => {
-        let f = (u.fullStreak ?? 0) + 1;
-        let p = (u.partialStreak ?? 0) + 1;
-        return `(${getHigherStreak(f, p)})`;
+        let f = (u.fullStreak ?? 0);
+        let p = (u.partialStreak ?? 0);
+        return `${getHigherStreak(f, p)}`;
       } 
       const getPos = (i) => i === 0
         ? "🥇"
@@ -136,7 +162,11 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
           : i === 2
             ? "🥉"
             : `${i + 1}.`;
-      msg += `- ${getPos(i)} ${u.name}: ${u.counter} ${getStreak(u)}\n`;
+      
+      // XXX: we need new stats form user as user may have
+      // lost streak after current processing
+      let newStats = getStreaksForUser(u.id, updatedUsers);
+      msg += `- ${getPos(i)} ${u.name}: ${u.counter} ${getStreak(newStats)}\n`;
     });
 
   }
@@ -184,6 +214,3 @@ export const challengeMessageCallback: ChallengeCallback = (challenge, users, da
 
   return msg;
 }
-
-
-// doNotify("Test message from Pushup Challenge", true);
