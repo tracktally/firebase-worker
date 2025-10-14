@@ -171,6 +171,21 @@ export const challengeMessageCallback: ChallengeCallback = (
 
   }
 
+  // lost streaks
+  if (data.lostFullStreaks.length > 0) {
+    msg += "\n💔 *Lost Full Streaks:*\n";
+    data.lostFullStreaks.forEach(s => {
+      msg += `- ${s}\n`;
+    });
+  }
+
+  if (data.lostPartialStreaks.length > 0) {
+    msg += "\n💔 *Lost Partial Streaks:*\n"
+    data.lostPartialStreaks.forEach(s => {
+      msg += `- ${s}\n`;
+    });
+  }
+
   // longest full streak
   let fullStreaks = data.fullStreaks.filter(s => s.fullStreak > 0)
     .sort((a, b) => b.fullStreak - a.fullStreak);
@@ -198,19 +213,6 @@ export const challengeMessageCallback: ChallengeCallback = (
     });
   }
 
-  if (data.lostFullStreaks.length > 0) {
-    msg += "\n💔 *Lost Full Streaks:*\n";
-    data.lostFullStreaks.forEach(s => {
-      msg += `- ${s}\n`;
-    });
-  }
-
-  if (data.lostPartialStreaks.length > 0) {
-    msg += "\n💔 *Lost Partial Streaks:*\n"
-    data.lostPartialStreaks.forEach(s => {
-      msg += `- ${s}\n`;
-    });
-  }
 
   return msg;
 }
