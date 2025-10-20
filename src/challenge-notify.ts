@@ -11,6 +11,7 @@ export type ChallengeCallback = (challenge: {
 
   goalCounterUser?: number,
   goalCounterChallenge?: number,
+  lastResetAt?: Date,
 
   // stats
   partialStreak?: number
@@ -52,10 +53,10 @@ const getTopPartialStreaks = (
   top: number) => {
   let max = 0;
   if (streaks.length > 0) {
-    let max = streaks[0].partialStreak;
+    max = streaks[0].partialStreak;
     let i = 0;
     streaks.forEach(s => {
-      if (s.partialStreak < max && i < 3) {
+      if (s.partialStreak < max && i < top) {
         max = s.partialStreak;
         i++;
       }
@@ -69,10 +70,10 @@ const getTopFullStreaks = (
   top: number) => {
   let max = 0;
   if (streaks.length > 0) {
-    let max = streaks[0].fullStreak;
+    max = streaks[0].fullStreak;
     let i = 0;
     streaks.forEach(s => {
-      if (s.fullStreak < max && i < 3) {
+      if (s.fullStreak < max && i < top) {
         max = s.fullStreak;
         i++;
       }
@@ -118,8 +119,14 @@ export const challengeMessageCallback: ChallengeCallback = (
 
   msg += `- Partial Streak: ${(updatedChallenge.partialStreak ?? 0)} ${msgChallengePatial}\n`;
   msg += `- Full Streak: ${(updatedChallenge.fullStreak ?? 0)} ${msgChallengeFull}\n\n`;
-   
 
+  let msgStats = "";
+
+  const most = users.sort((a, b) => b.counter - a.counter).filter(u => u.counter > 0);
+  if (most.length > 0) {
+    msgStats += `💪 *Most reps:* ${most[0].name} (${most[0].counter})\n`;
+  }
+   
   let sorted = users.sort((a, b) => {
     const aTime = normalizeDate(a.goalReachedAt)?.getTime() ?? null;
     const bTime = normalizeDate(b.goalReachedAt)?.getTime() ?? null;
@@ -137,7 +144,24 @@ export const challengeMessageCallback: ChallengeCallback = (
   }).filter(u => u.counter > 0);
     // .slice(0, 10);
 
-  msg += "📊 *Top Players:*\n";
+  if (sorted.length > 0 && sorted[0].goalReachedAt && challenge.lastResetAt) {
+      const f = sorted[0];
+      let durationStr = "";
+      try{
+        const r = normalizeDate(challenge.lastResetAt) as Date;
+        const d = normalizeDate(f.goalReachedAt) as Date;
+        const durationMs = d.getTime() - r.getTime();
+        const hours = Math.floor(durationMs / (1000 * 60 * 60));
+        const minutes = Math.floor((durationMs / (1000 * 60)) % 60);
+        durationStr = `${hours}h ${minutes}min`;
+      } catch (e) {}
+    msgStats += `💨 *Fastest:* ${sorted[0].name} (${durationStr})\n`;
+  }
+  if (msgStats.length > 0) {
+    msg += msgStats + "\n";
+  } 
+
+  msg += "📊 *Leaderboard:*\n";
 
   if (sorted.length === 0) {
     msg += "- No participation\n";
@@ -191,7 +215,7 @@ export const challengeMessageCallback: ChallengeCallback = (
     .sort((a, b) => b.fullStreak - a.fullStreak);
 
   if (fullStreaks.length > 0) {    
-    let max = getTopFullStreaks(fullStreaks, 2);
+    let max = getTopFullStreaks(fullStreaks, 0 /* top n */);
     msg += "\n🔥 *Longest Full Streaks:*\n";
     fullStreaks.forEach(s => {
       if (s.fullStreak >= max) {
@@ -204,7 +228,7 @@ export const challengeMessageCallback: ChallengeCallback = (
     .sort((a, b) => b.partialStreak - a.partialStreak);
 
   if (partialStreaks.length > 0) {
-    let max = getTopPartialStreaks(partialStreaks, 2);
+    let max = getTopPartialStreaks(partialStreaks, 0);
     msg += "\n🌗 *Longest Partial Streaks:*\n";
     partialStreaks.forEach(s => {
       if (s.partialStreak >= max) {
