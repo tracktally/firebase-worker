@@ -81,9 +81,13 @@ export async function resetChallenge(
 console.log("starting reset script...");
 
 
-let app = admin.initializeApp({
-  credential: admin.credential.cert(require("../secrets/service-account-challenge.json")),
-});
+// let app = admin.initializeApp({
+//   credential: admin.credential.cert(require("../secrets/service-account-challenge.json")),
+// });
 
-const testGroup = "W5jNVClMPSiyaeY2HdBh";
-resetChallenge(app, testGroup);
+// let app = admin.initializeApp({
+//   credential: admin.credential.cert(require("../secrets/tracktally-prod-firebase.json")),
+// });
+
+// const testGroup = "XkROPB7880JnY05TcNCv";
+// resetChallenge(app, testGroup);
