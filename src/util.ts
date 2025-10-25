@@ -23,6 +23,21 @@ export function normalizeDate(value: any): Date | null {
 }
 
 
+export function userProgressSort(a: any, b: any): number {
+    const aTime = normalizeDate(a.goalReachedAt)?.getTime() ?? null;
+    const bTime = normalizeDate(b.goalReachedAt)?.getTime() ?? null;
+    if (aTime && bTime) return aTime - bTime;
+    if (aTime && !bTime) return -1;
+    if (!aTime && bTime) return 1;
+
+    if (a.counter !== b.counter) {
+      return b.counter - a.counter;
+    }
+
+    const aAct = normalizeDate(a.lastActivityAt)?.getTime() ?? 0;
+    const bAct = normalizeDate(b.lastActivityAt)?.getTime() ?? 0;
+    return aAct - bAct;
+}
 
 export function getResetDates(challenge: {
     interval_hrs?: number;

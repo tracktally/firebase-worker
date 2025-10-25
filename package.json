@@ -15,15 +15,18 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-      "build": "tsc",
-      "start": "ts-node rollup.ts"
+    "build": "tsc",
+    "start": "ts-node rollup.ts"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "firebase-admin": "^13.5.0"
+    "better-sqlite3": "^12.4.1",
+    "firebase-admin": "^13.5.0",
+    "openai": "^6.7.0"
   }
 }

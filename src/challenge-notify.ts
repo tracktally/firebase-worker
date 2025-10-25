@@ -1,6 +1,6 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
-import { getResetDates, normalizeDate } from "./util";
+import { getResetDates, normalizeDate, userProgressSort } from "./util";
 import { spawn } from "child_process";
 
 // TODO: refactor users to their own type
@@ -127,21 +127,7 @@ export const challengeMessageCallback: ChallengeCallback = (
     msgStats += `💪 *Most reps:* ${most[0].name} (${most[0].counter})\n`;
   }
    
-  let sorted = users.sort((a, b) => {
-    const aTime = normalizeDate(a.goalReachedAt)?.getTime() ?? null;
-    const bTime = normalizeDate(b.goalReachedAt)?.getTime() ?? null;
-    if (aTime && bTime) return aTime - bTime;
-    if (aTime && !bTime) return -1;
-    if (!aTime && bTime) return 1;
-
-    if (a.counter !== b.counter) {
-      return b.counter - a.counter;
-    }
-
-    const aAct = normalizeDate(a.lastActivityAt)?.getTime() ?? 0;
-    const bAct = normalizeDate(b.lastActivityAt)?.getTime() ?? 0;
-    return bAct - aAct;
-  }).filter(u => u.counter > 0);
+  let sorted = users.sort((a, b) => userProgressSort(a, b)).filter(u => u.counter > 0);
     // .slice(0, 10);
 
   if (sorted.length > 0 && sorted[0].goalReachedAt && challenge.lastResetAt) {
