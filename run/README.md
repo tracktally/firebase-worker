@@ -6,3 +6,6 @@ Run cron for master branch
 
 ## run-test
 Test script for develop
+
+## run-motivation
+Notify motivation in group chat

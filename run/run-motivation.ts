@@ -1,17 +1,16 @@
-import { count } from "console";
 import * as admin from "firebase-admin";
 import { getResetDates, normalizeDate } from "../src/util";
 import { challengeMessageCallback } from "../src/challenge-notify"
 import { runChallengeMaintenanceCustomInterval } from "../src/challenge-maintenance"
 import { spawn } from "child_process";
 import { exit } from "process";
-import { insertMessage, getMessages } from "../src/motivation/db";
 import { generateMotivation } from "../src/motivation/gpt_motivation";
-import { getToday, getYesterday } from "../src/motivation/motivation";
-import { generateLeaderboardCommentary } from "../src/motivation/gpt_leaderboard";
+import { getToday, getYesterday, getYesterdayFromStats } from "../src/motivation/motivation";
 
 
+// TODO: Change this for debug
 const SEND_SCRIPT = __dirname + "/../scripts/send_test.sh";
+// const SEND_SCRIPT = __dirname + "/../scripts/send_group.sh";
 
 function notify(message: string) {
   let script = SEND_SCRIPT;
@@ -34,10 +33,22 @@ const app = admin.initializeApp({
 async function motivation() {
   const { challenge, users } = await getToday(app, challengeId)
 
-  const yesterday = getYesterday(challengeId).message
+  // let yesterday = getYesterday(challengeId).message
+  let yesterday = "";
+
+  const ranking = await getYesterdayFromStats(app, challengeId);
+  
+  let rank = 1;
+  ranking
+   .filter(r => r.count > 0)
+   .forEach((r) => {
+    yesterday += `- ${rank}: ${r.name}: ${r.count}\n`;
+    rank ++;
+  });
+
   let today = "";
 
-  let rank = 1;
+  rank = 1;
   users.forEach((u) => {
     today += `- ${rank}: ${u.name}: ${u.counter}\n`;
     rank++;
@@ -50,14 +61,14 @@ async function motivation() {
   });
 }
 
-async function leaderboard() {
-  const yesterday = getYesterday(challengeId).message
-  await generateLeaderboardCommentary(yesterday, true).then((message) => {
-    console.log("Generated message:");
-    console.log(message);
-  });
+// async function leaderboard() {
+//   const yesterday = getYesterday(challengeId).message
+//   await generateLeaderboardCommentary(yesterday, true).then((message) => {
+//     console.log("Generated message:");
+//     console.log(message);
+//   });
 
-}
+// }
 
 async function main() {
   await motivation();
@@ -69,3 +80,5 @@ main().then(() => exit(0)).catch((err) => {
   console.error("Error in test:", err);
   exit(1);
 });
+
+
