@@ -9,8 +9,8 @@ import { getToday, getYesterday, getYesterdayFromStats } from "../src/motivation
 
 
 // TODO: Change this for debug
-const SEND_SCRIPT = __dirname + "/../scripts/send_test.sh";
-// const SEND_SCRIPT = __dirname + "/../scripts/send_group.sh";
+// const SEND_SCRIPT = __dirname + "/../scripts/send_test.sh";
+const SEND_SCRIPT = __dirname + "/../scripts/send_group.sh";
 
 function notify(message: string) {
   let script = SEND_SCRIPT;
