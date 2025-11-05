@@ -21,7 +21,7 @@ export function getYesterday(challengeId: string) {
   };
 }
 
-export async function getToday(app, challengeId: string, cutoff = 1.5) {
+export async function getToday(app, challengeId: string, cutoff = 2) {
 
   const db = app.firestore();
   const challengeRef = db.collection("challenges").doc(challengeId);
