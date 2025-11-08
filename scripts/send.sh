@@ -2,8 +2,9 @@
 set -euo pipefail
 
 set -x
-session="challenge2"
-key='$2b$10$cakydOm8j6wAtgq8fTvdMuzO.jpzkoJHLkKPHZFR1EqPN79Njazia'
+session="challenge3"
+# key='$2b$10$cakydOm8j6wAtgq8fTvdMuzO.jpzkoJHLkKPHZFR1EqPN79Njazia'
+key='$2b$10$hZIk5i40Tpi7EBnjz3Lume5N4lN2VCRFpKPFM.ybjXHyBUQBUa_M.'
 # host="http://localhost:21465"
 host="http://192.168.178.30:21465"
 set +x
