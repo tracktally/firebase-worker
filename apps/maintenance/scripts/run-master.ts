@@ -3,7 +3,8 @@
 import * as admin from "firebase-admin";
 import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
 import { spawn } from "child_process";
-import { SEND_SCRIPT, TRACKTALLY_PROD } from "../../paths";
+import { SEND_SCRIPT, TRACKTALLY_HIGHLIGHT_CHALLENGE_ID, TRACKTALLY_PROD } from "../../defines";
+import { notifyGroup } from "../../whatsapp";
 
 let app = admin.initializeApp({
   credential: admin.credential.cert(require(TRACKTALLY_PROD)),
@@ -19,7 +20,7 @@ runChallengeMaintenanceCustomInterval(
   app,
   debug, /* debug */
   shouldNotify,
-  notify)
+  notifyGroup)
   .then(() => {
     console.log("Daily rollup finished");
     process.exit(0);
@@ -31,21 +32,9 @@ runChallengeMaintenanceCustomInterval(
 
 function shouldNotify(challenge: any) {
   console.log("should notify: ", challenge.id, challenge.name);
-  if (challenge.id == "XkROPB7880JnY05TcNCv") {
+  if (challenge.id == TRACKTALLY_HIGHLIGHT_CHALLENGE_ID) {
     console.log("Sending message...");
     return true;
   }
   return false;
-}
-
-function notify(message: string) {
-  let script = SEND_SCRIPT
-  const args = [`${message}`];
-
-  const child = spawn(script, args, { stdio: "inherit" });
-
-  child.on("close", (code) => {
-    console.log(`Script exited with code ${code}`);
-  });
-  return;
 }

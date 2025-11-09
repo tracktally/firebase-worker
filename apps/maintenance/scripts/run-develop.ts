@@ -1,7 +1,7 @@
 #!/usr/bin/env -S npx ts-node
 
 import * as admin from "firebase-admin";
-import { TRACKTALLY_DEV } from "../../paths";
+import { TRACKTALLY_DEV } from "../../defines";
 
 import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
 

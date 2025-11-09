@@ -22,58 +22,62 @@ export function normalizeDate(value: any): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+export function dailyStatsDateFormat(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1)
+    .padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 
 export function userProgressSort(a: any, b: any): number {
-    const aTime = normalizeDate(a.goalReachedAt)?.getTime() ?? null;
-    const bTime = normalizeDate(b.goalReachedAt)?.getTime() ?? null;
-    if (aTime && bTime) return aTime - bTime;
-    if (aTime && !bTime) return -1;
-    if (!aTime && bTime) return 1;
+  const aTime = normalizeDate(a.goalReachedAt)?.getTime() ?? null;
+  const bTime = normalizeDate(b.goalReachedAt)?.getTime() ?? null;
+  if (aTime && bTime) return aTime - bTime;
+  if (aTime && !bTime) return -1;
+  if (!aTime && bTime) return 1;
 
-    if (a.counter !== b.counter) {
-      return b.counter - a.counter;
-    }
+  if (a.counter !== b.counter) {
+    return b.counter - a.counter;
+  }
 
-    const aAct = normalizeDate(a.lastActivityAt)?.getTime() ?? 0;
-    const bAct = normalizeDate(b.lastActivityAt)?.getTime() ?? 0;
-    return aAct - bAct;
+  const aAct = normalizeDate(a.lastActivityAt)?.getTime() ?? 0;
+  const bAct = normalizeDate(b.lastActivityAt)?.getTime() ?? 0;
+  return aAct - bAct;
 }
 
 export function getResetDates(challenge: {
-    interval_hrs?: number;
-    resetTimeStr?: string;
-    lastResetAt?: Date;
+  interval_hrs?: number;
+  resetTimeStr?: string;
+  lastResetAt?: Date;
 }, now: Date = new Date()): {
-    lastResetDate: Date;
-    nextResetDate: Date;
-    intervalHrs: number;
+  lastResetDate: Date;
+  nextResetDate: Date;
+  intervalHrs: number;
 } {
 
-    const toPosIntegerOrDefault = (v: unknown, def: number): number =>
-        Number.isInteger(v) && (v as number) > 0 ? (v as number) : def;
+  const toPosIntegerOrDefault = (v: unknown, def: number): number =>
+    Number.isInteger(v) && (v as number) > 0 ? (v as number) : def;
 
-    const isValidDate = (d: unknown): d is Date =>
-        d instanceof Date && !Number.isNaN(d.getTime());
+  const isValidDate = (d: unknown): d is Date =>
+    d instanceof Date && !Number.isNaN(d.getTime());
 
-    const yesterdayMidnight = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() - 1
-    );
+  const yesterdayMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 1
+  );
 
-    /* Sanitation. Work with these instead of challenge */
-    const intervalHrs = toPosIntegerOrDefault(challenge?.interval_hrs, 24);
-    const resetTimeStr = (challenge?.resetTimeStr ?? '').trim() || '00:00';
-    const lastResetDate = isValidDate(challenge?.lastResetAt)
-        ? challenge.lastResetAt
-        : yesterdayMidnight;
+  /* Sanitation. Work with these instead of challenge */
+  const intervalHrs = toPosIntegerOrDefault(challenge?.interval_hrs, 24);
+  const resetTimeStr = (challenge?.resetTimeStr ?? '').trim() || '00:00';
+  const lastResetDate = isValidDate(challenge?.lastResetAt)
+    ? challenge.lastResetAt
+    : yesterdayMidnight;
 
-    const [h, m] = resetTimeStr.split(':').map(Number);
-    lastResetDate.setHours(h ?? 0, m ?? 0, 0, 0);
+  const [h, m] = resetTimeStr.split(':').map(Number);
+  lastResetDate.setHours(h ?? 0, m ?? 0, 0, 0);
 
-    const nextResetDate = new Date(lastResetDate);
-    nextResetDate.setHours(nextResetDate.getHours() + intervalHrs);
+  const nextResetDate = new Date(lastResetDate);
+  nextResetDate.setHours(nextResetDate.getHours() + intervalHrs);
 
-    return { lastResetDate, nextResetDate, intervalHrs };
+  return { lastResetDate, nextResetDate, intervalHrs };
 }
 

@@ -2,7 +2,7 @@
 
 import * as admin from "firebase-admin";
 import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
-import { TRACKTALLY_DEV, TRACKTALLY_PROD } from "../../paths";
+import { TRACKTALLY_DEV, TRACKTALLY_PROD } from "../../defines";
 
 let app = admin.initializeApp({
   credential: admin.credential.cert(require(TRACKTALLY_PROD)),

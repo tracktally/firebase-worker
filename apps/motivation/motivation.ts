@@ -1,25 +1,5 @@
-import { exit } from "process";
-import { insertMessage, getMessages } from "./db";
 import * as admin from "firebase-admin";
-import { normalizeDate, userProgressSort } from "../util";
-import { generateMotivation } from "./gpt_motivation";
-import { generateLeaderboardCommentary } from "./gpt_leaderboard";
-
-export function getYesterday(challengeId: string) {
-
-  let history = getMessages(challengeId)
-
-  if (history.length == 0) {
-    throw new Error("No message history found");
-  }
-
-  let last = history[0];
-  let yesterday = last.message;
-
-  return {
-    message: yesterday
-  };
-}
+import { dailyStatsDateFormat, normalizeDate, userProgressSort } from "../util";
 
 export async function getToday(app, challengeId: string, cutoff = 2) {
 
@@ -32,7 +12,6 @@ export async function getToday(app, challengeId: string, cutoff = 2) {
   }
 
   const challengeData = { id: challengeSnap.id, ...challengeSnap.data() };
-
   let users: any[] = [];
 
   const usersSnap = await db.collection(`challenges/${challengeId}/users`).get();
@@ -41,12 +20,10 @@ export async function getToday(app, challengeId: string, cutoff = 2) {
     ...doc.data(),
   }));
 
-  // challengeData?.cutOffDays ?? 1
   const inactivityCutOff = new Date();
   inactivityCutOff.setDate(
     inactivityCutOff.getDate() - (cutoff)
   );
-  console.log(inactivityCutOff);
 
   users = users.sort((a, b) => userProgressSort(a, b))
     .filter((a) => {
@@ -63,15 +40,13 @@ export async function getToday(app, challengeId: string, cutoff = 2) {
 export async function getYesterdayFromStats(
   app: admin.app.App,
   challengeId: string,
-): Promise<{ name: string; userId: string; count: number }[]> {
+): Promise<{ name: string; userId: string; counter: number }[]> {
   const db = app.firestore();
-
 
   const now = new Date();
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  const dateId = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1)
-    .padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
-
+  const dateId = dailyStatsDateFormat(yesterday);
+  
   const dailyRef = db.doc(`challenges/${challengeId}/dailyStats/${dateId}`);
   const snap = await dailyRef.get();
 
@@ -82,22 +57,46 @@ export async function getYesterdayFromStats(
 
   const data = snap.data() as { users?: Record<string, number> };
   const usersMap = data?.users ?? {};
-
-
   const usersSnap = await db.collection(`challenges/${challengeId}/users`).get();
   const nameLookup: Record<string, string> = {};
+  
   usersSnap.forEach(u => {
     const d = u.data() as { name?: string };
     nameLookup[u.id] = d.name ?? u.id;
   });
 
+  // XXX: Ranking currently does not consider time. ok for now.
   const ranking = Object.entries(usersMap)
-    .map(([userId, count]) => ({
+    .map(([userId, counter]) => ({
       userId,
       name: nameLookup[userId] ?? userId,
-      count,
+      counter,
     }))
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => b.counter - a.counter);
 
   return ranking;
+}
+
+export async function generateRanking(app, challengeId: string) {  
+  const { users } = await getToday(app, challengeId)
+  const ranking = await getYesterdayFromStats(app, challengeId);
+  
+  let rank = 1;
+  let yesterday = "";
+  ranking
+   .filter(r => r.counter > 0)
+   .forEach((r) => {
+    yesterday += `- ${rank}: ${r.name}: ${r.counter}\n`;
+    rank ++;
+  });
+
+  let today = "";
+
+  rank = 1;
+  users.forEach((u) => {
+    today += `- ${rank}: ${u.name}: ${u.counter}\n`;
+    rank++;
+  });
+
+  return { yesterday, today };  
 }

@@ -1,9 +1,9 @@
 import { exit } from "process";
 import { insertMessage, getMessages } from "./db";
 import * as admin from "firebase-admin";
-import { normalizeDate, userProgressSort } from "../util";
-import { generateMotivation } from "./gpt_motivation";
-import { generateLeaderboardCommentary } from "./gpt_leaderboard";
+import { normalizeDate, userProgressSort } from "../../util";
+import { generateMotivation } from "../gpt_motivation";
+import { generateLeaderboardCommentary } from "../gpt_leaderboard";
 
 function getYesterday(challengeId: string) {
 
