@@ -1,5 +1,7 @@
 # Periodic Maintenance Job
 
+Periodic/daily maintenance job to reset counters.
+
 ```
 # build
 make build
