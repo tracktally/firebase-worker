@@ -14,12 +14,13 @@ const app = admin.initializeApp({
 const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
 const dbFile = __dirname + "/test_winner.json";
 const debug = true;
+const alwaysRun = true;
 
 async function main() {
   let result = await runWinnerApp(app,
      challengeId, 
      dbFile,
-     debug);
+     debug, alwaysRun);
 
   if (result.containsWinners) {
     console.log("Winners detected, sending notification to test group");

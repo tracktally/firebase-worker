@@ -2,31 +2,31 @@
 
 import * as admin from "firebase-admin";
 import { exit } from "process";
-import { generateMotivation } from "../gpt_winner";
-import { generateRanking } from "../winner";
-import { TRACKTALLY_HIGHLIGHT_CHALLENGE_ID, TRACKTALLY_PROD } from "../../defines";
-import { notifyGroup } from "../../whatsapp";
+import { generateRanking, runWinnerApp } from "../../winner/winner";
+import { TRACKTALLY_HIGHLIGHT_CHALLENGE_ID, TRACKTALLY_PROD, TRACKTALLY_TEST_CHALLENGE_ID } from "../../defines";
+import { notifyGroup, notifyTest } from "../../whatsapp";
 
+/* For test we use prod database but test whatsapp group */
 const app = admin.initializeApp({
   credential: admin.credential.cert(require(TRACKTALLY_PROD)),
 });
 
 const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
-
-async function motivation() {
-  const {yesterday, today} = await generateRanking(app, challengeId);
-
-  await generateMotivation(yesterday, today, true).then((message) => {
-    console.log("Generated message:");
-    console.log(message);
-    notifyGroup(message); /* Production whatsapp group */
-  });
-}
+const dbFile = __dirname + "/master_winner.json";
+const debug = true;
+const alwaysRun = false;
 
 async function main() {
-  await motivation();
-}
+  let result = await runWinnerApp(app,
+     challengeId, 
+     dbFile,
+     debug, alwaysRun);
 
+  if (result.containsWinners) {
+    console.log("Winners detected, sending notification to test group");
+    notifyGroup(result.message);
+  }
+}
 
 main().then(() => exit(0)).catch((err) => {
   console.error("Error in test:", err);
