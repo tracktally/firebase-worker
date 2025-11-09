@@ -3,14 +3,19 @@
 import * as admin from "firebase-admin";
 import { exit } from "process";
 import { generateRanking, runWinnerApp } from "../../winner/winner";
-import { TRACKTALLY_HIGHLIGHT_CHALLENGE_ID, TRACKTALLY_PROD, TRACKTALLY_TEST_CHALLENGE_ID } from "../../defines";
+import { TRACKTALLY_HIGHLIGHT_CHALLENGE_ID, TRACKTALLY_DEV, TRACKTALLY_PROD, TRACKTALLY_TEST_CHALLENGE_ID } from "../../defines";
 import { notifyTest } from "../../whatsapp";
 
-/* For test we use prod database but test whatsapp group */
+/* 
+ * Important: Ensure that test test script uses notifyTest
+ * To inform in the test group
+ */ 
 const app = admin.initializeApp({
   credential: admin.credential.cert(require(TRACKTALLY_PROD)),
+  // credential: admin.credential.cert(require(TRACKTALLY_DEV)),
 });
 
+// const challengeId = TRACKTALLY_TEST_CHALLENGE_ID;
 const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
 const dbFile = __dirname + "/../../../share/test_winner.json";
 const debug = true;
@@ -24,7 +29,7 @@ async function main() {
 
   if (result.containsWinners) {
     console.log("Winners detected, sending notification to test group");
-    notifyTest(result.message);
+    notifyTest(result.message); /* test group */
   }
 }
 

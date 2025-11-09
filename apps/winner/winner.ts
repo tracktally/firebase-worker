@@ -156,10 +156,15 @@ export async function runWinnerApp(app,
       returnMsg.message = message;
       returnMsg.containsWinners = true;
     }
+  } else {
+    console.log("Skipping winner generation");
   }
 
-  storedData.lastRun = new Date();
-  storedData.nextRun = nextResetDate;
-  await saveStorage(storagePath, storedData);
+  if (returnMsg.containsWinners) {
+    storedData.lastRun = new Date();
+    storedData.nextRun = nextResetDate;
+    await saveStorage(storagePath, storedData);
+  }
+  
   return returnMsg;
 }
