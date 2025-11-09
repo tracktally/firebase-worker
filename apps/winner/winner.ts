@@ -139,9 +139,9 @@ export async function runWinnerApp(app,
 
   console.log("Challenge:", challengeId, challenge.name);
   console.log("Time:", now.toString());
-  console.log("Last run:", lastRun.toString());
-  console.log("Next run:", nextRun.toString());
-  console.log("Last reset:", nextResetDate.toString());
+  console.log("Last run:", lastRun);
+  console.log("Next run:", nextRun);
+  console.log("Last reset:", nextResetDate);
 
   if (alwaysRun || !nextRun || nextRun < nextResetDate) {
     // XXX: Only generate it if never run
