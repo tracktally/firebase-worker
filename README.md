@@ -1,14 +1,7 @@
 # firebase-worker
 
-```bash
-make build-dev
-make build-master
+Helper scripts for backend maintenance tasks in the track-tally app.
 
-make run-dev
-make run-master
+Place your Firebase Admin SDK service account key in `./secrets/`.
 
-make cron
-```
-
-Copy firebase Admin SDK key to ./secrets/.
 

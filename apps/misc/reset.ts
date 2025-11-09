@@ -1,3 +1,5 @@
+#!/usr/bin/env -S npx ts-node
+
 import * as admin from "firebase-admin";
 import readline from "readline";
 

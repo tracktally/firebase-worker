@@ -8,3 +8,4 @@ log-*.txt
 tmp
 secret
 pushup_messages.db
+*.log

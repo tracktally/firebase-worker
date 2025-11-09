@@ -1,13 +1,18 @@
-import { count } from "console";
+#!/usr/bin/env -S npx ts-node
+
 import * as admin from "firebase-admin";
+import { TRACKTALLY_DEV } from "../../paths";
 
-import { runChallengeMaintenanceCustomInterval } from "../src/challenge-maintenance"
-
+import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
 
 let app = admin.initializeApp({
-  credential: admin.credential.cert(require("../secrets/service-account-challenge.json")),
+  credential: admin.credential.cert(require(TRACKTALLY_DEV)),
 });
 
+/*
+ * Track Tally Dev Database.
+ * No Notifications are sent.
+ */
 const debug = false;
 
 runChallengeMaintenanceCustomInterval(

@@ -14,4 +14,4 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 ENV TZ=Europe/Zurich
 
 ## default script
-CMD ["./run/run-test.sh"]
+CMD [""]

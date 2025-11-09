@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
-import { getResetDates, normalizeDate } from "../src/util";
-import { challengeMessageCallback } from "../src/challenge-notify"
-import { runChallengeMaintenanceCustomInterval } from "../src/challenge-maintenance"
+import { getResetDates, normalizeDate } from "../../util";
+import { challengeMessageCallback } from "../../maintenance/challenge-notify"
+import { runChallengeMaintenanceCustomInterval } from "../../maintenance/challenge-maintenance"
 import { spawn } from "child_process";
 import { exit } from "process";
 import { generateMotivation } from "../src/motivation/gpt_motivation";

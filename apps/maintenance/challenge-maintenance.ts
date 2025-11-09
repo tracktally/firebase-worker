@@ -1,6 +1,6 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
-import { getResetDates, normalizeDate } from "./util";
+import { getResetDates, normalizeDate } from "../util";
 import {challengeMessageCallback} from "./challenge-notify"
 
 

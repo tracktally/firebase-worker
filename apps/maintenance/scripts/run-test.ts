@@ -1,0 +1,54 @@
+#!/usr/bin/env -S npx ts-node
+
+import * as admin from "firebase-admin";
+import { runChallengeMaintenanceCustomInterval } from "../challenge-maintenance"
+import { spawn } from "child_process";
+import { TEST_SEND_SCRIPT, TRACKTALLY_DEV } from "../../paths";
+
+let app = admin.initializeApp({
+  credential: admin.credential.cert(require(TRACKTALLY_DEV)),
+});
+
+/*
+ * Track Tally Test Database.
+ * With notification in test group for testing.
+ */
+
+const debug = true;
+console.log("test mode: debug =", debug);
+
+runChallengeMaintenanceCustomInterval(
+  app,
+  debug, /* debug */
+  shouldNotify,
+  notify)
+  .then(() => {
+    console.log("Daily rollup finished");
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Error running rollup", err);
+    process.exit(1);
+  });
+
+
+function shouldNotify(challenge: any) {
+  console.log("should notify: ", challenge.id, challenge.name);
+  if (challenge.id == "W5jNVClMPSiyaeY2HdBh") {
+    console.log("\n\n=========== Sending message");
+    return true;
+  }
+  return false;
+}
+
+function notify(message: string) {
+  let script = TEST_SEND_SCRIPT;
+  const args = [`${message}`];
+
+  const child = spawn(script, args, { stdio: "inherit" });
+
+  child.on("close", (code) => {
+    console.log(`Script exited with code ${code}`);
+  });
+  return;
+}  

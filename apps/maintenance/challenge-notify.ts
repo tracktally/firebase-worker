@@ -1,6 +1,6 @@
 import { count } from "console";
 import * as admin from "firebase-admin";
-import { getResetDates, normalizeDate, userProgressSort } from "./util";
+import { getResetDates, normalizeDate, userProgressSort } from "../util";
 import { spawn } from "child_process";
 
 // TODO: refactor users to their own type
