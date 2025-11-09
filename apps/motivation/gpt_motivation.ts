@@ -41,11 +41,10 @@ export async function generateMotivation(yesterday: string, currentProgress: str
 
 
     const message = response.choices[0].message.content
-        .replace(/```/g, "")
-        .replace("**", "*")
-        .replace("***", "*")
-        .replace("****", "*")
-        .trim();
+    .replace("markdown", "")
+    .replace(/```/g, "")
+    .replace(/\*{2,}/g, "*")
+    .trim();        
 
     return message;
 }
