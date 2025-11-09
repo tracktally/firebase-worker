@@ -23,7 +23,7 @@ log:
 	tail -f $(LOG)	
 
 # XXX: Adjust accordingly
-CRON_JOB=*/15 * * * $(RUN)
+CRON_JOB=*/15 * * * * $(RUN)
 
 .PHONY: cron
 cron:
