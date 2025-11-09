@@ -2,18 +2,25 @@ IMAGE=tracktally-winner
 SCRIPT_DIR= ./apps/winner/scripts
 BASE_DIR= ../../
 LOG ?=$(PWD)/$(IMAGE).log
+SHARE_DIR=$(BASE_DIR)/share
 
-RUN=docker run --rm $(IMAGE) $(SCRIPT_DIR)/run-master.ts \
+RUN=docker run --rm \
+	-v $(SHARE_DIR):/app/share \
+	$(IMAGE) $(SCRIPT_DIR)/run-master.ts \
 	2>&1 | tee -a $(LOG)	
 
-RUN_TEST=docker run --rm $(IMAGE) $(SCRIPT_DIR)/run-test.ts 2>&1 | tee -a $(LOG)
+RUN_TEST=docker run \
+	-v $(SHARE_DIR):/app/share \
+	--rm $(IMAGE) $(SCRIPT_DIR)/run-test.ts 2>&1 | tee -a $(LOG)
 
 .PHONY: build
 build:
+	mkdir -p $(SHARE_DIR)
 	docker build -t $(IMAGE) $(BASE_DIR)
 
 .PHONY: run
 run:
+	mkdir -p $(SHARE_DIR)
 	$(RUN)		
 
 test:

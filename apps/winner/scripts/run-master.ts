@@ -12,7 +12,7 @@ const app = admin.initializeApp({
 });
 
 const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
-const dbFile = __dirname + "/master_winner.json";
+const dbFile = __dirname + "/../../../share/master_winner.json";
 const debug = true;
 const alwaysRun = false;
 

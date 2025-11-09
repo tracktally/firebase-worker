@@ -12,9 +12,9 @@ const app = admin.initializeApp({
 });
 
 const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
-const dbFile = __dirname + "/test_winner.json";
+const dbFile = __dirname + "/../../../share/test_winner.json";
 const debug = true;
-const alwaysRun = true;
+const alwaysRun = false;
 
 async function main() {
   let result = await runWinnerApp(app,

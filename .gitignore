@@ -9,3 +9,5 @@ tmp
 secret
 pushup_messages.db
 *.log
+share/*
+share
