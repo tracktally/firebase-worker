@@ -1,0 +1,35 @@
+#!/usr/bin/env -S npx ts-node
+
+import * as admin from "firebase-admin";
+import { exit } from "process";
+import { generateRanking, runWinnerApp } from "../../winner/winner";
+import { TRACKTALLY_HIGHLIGHT_CHALLENGE_ID, TRACKTALLY_PROD, TRACKTALLY_TEST_CHALLENGE_ID } from "../../defines";
+import { notifyTest } from "../../whatsapp";
+
+/* For test we use prod database but test whatsapp group */
+const app = admin.initializeApp({
+  credential: admin.credential.cert(require(TRACKTALLY_PROD)),
+});
+
+const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
+const dbFile = __dirname + "/test_winner.json";
+const debug = true;
+
+async function main() {
+  let result = await runWinnerApp(app,
+     challengeId, 
+     dbFile,
+     debug);
+
+  if (result.containsWinners) {
+    console.log("Winners detected, sending notification to test group");
+    notifyTest(result.message);
+  }
+}
+
+main().then(() => exit(0)).catch((err) => {
+  console.error("Error in test:", err);
+  exit(1);
+});
+
+
