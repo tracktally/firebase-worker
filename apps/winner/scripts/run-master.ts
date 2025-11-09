@@ -6,11 +6,13 @@ import { generateRanking, runWinnerApp } from "../../winner/winner";
 import { TRACKTALLY_HIGHLIGHT_CHALLENGE_ID, TRACKTALLY_PROD, TRACKTALLY_TEST_CHALLENGE_ID } from "../../defines";
 import { notifyGroup, notifyTest } from "../../whatsapp";
 
-/* For test we use prod database but test whatsapp group */
 const app = admin.initializeApp({
   credential: admin.credential.cert(require(TRACKTALLY_PROD)),
 });
 
+/* XXX: This runs in a docker container. so we must mount the share directory,
+ * otherwise we lose the data between runs.
+ */
 const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
 const dbFile = __dirname + "/../../../share/master_winner.json";
 const debug = true;
