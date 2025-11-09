@@ -59,6 +59,8 @@ export function getResetDates(challenge: {
   const isValidDate = (d: unknown): d is Date =>
     d instanceof Date && !Number.isNaN(d.getTime());
 
+  const lastResetAt = normalizeDate(challenge?.lastResetAt);
+
   const yesterdayMidnight = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -68,8 +70,8 @@ export function getResetDates(challenge: {
   /* Sanitation. Work with these instead of challenge */
   const intervalHrs = toPosIntegerOrDefault(challenge?.interval_hrs, 24);
   const resetTimeStr = (challenge?.resetTimeStr ?? '').trim() || '00:00';
-  const lastResetDate = isValidDate(challenge?.lastResetAt)
-    ? challenge.lastResetAt
+  const lastResetDate = isValidDate(lastResetAt)
+    ? lastResetAt
     : yesterdayMidnight;
 
   const [h, m] = resetTimeStr.split(':').map(Number);

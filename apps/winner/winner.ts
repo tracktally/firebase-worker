@@ -136,18 +136,29 @@ export async function runWinnerApp(app,
   let lastRun = normalizeDate(storedData.lastRun) ?? null;
   let nextRun = normalizeDate(storedData.nextRun) ?? null;
   const { lastResetDate, nextResetDate, intervalHrs } = getResetDates(challenge, now);
+  
+  // XXX: To awoid races between reset and winner announcement,
+  // add a minimum wait time after reset
+  const waitTime = new Date(now.getTime() 
+      - 30 /*30 minutes */ * 60 * 1000);
+
+  const minWaitTimePassed = lastResetDate < waitTime;
+
+  console.log("lastreset" ,lastResetDate)
+  console.log("nextreset" ,nextResetDate)
+  console.log("intervall" ,intervalHrs)
 
   console.log("Challenge:", challengeId, challenge.name);
   console.log("Time:", now.toString());
-  console.log("Last run:", lastRun);
-  console.log("Next run:", nextRun);
-  console.log("Last reset:", nextResetDate);
+  console.log("lastRun:", lastRun);
+  console.log("nextRun", nextRun);
+  console.log("challenge: Last reset:", lastResetDate);
+  console.log("challenge: next reset:", nextResetDate);
+  console.log("wait time:", waitTime, minWaitTimePassed);
 
-  if (alwaysRun || !nextRun || nextRun < nextResetDate) {
-    // XXX: Only generate it if never run
-    // or if nextRun is in before the next reset date
-    // This ensures we only run once per interval
-
+  if (alwaysRun 
+      || !nextRun 
+      || (minWaitTimePassed && nextRun < nextResetDate)) {
     console.log("Running winner generation for challenge:", challengeId);
 
     let message = await generateMessage(app, challengeId, debug);
