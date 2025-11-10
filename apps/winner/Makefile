@@ -1,8 +1,10 @@
+MAKEFILE_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+
 IMAGE=tracktally-winner
 SCRIPT_DIR= ./apps/winner/scripts
-BASE_DIR= ../../
-LOG ?=$(PWD)/$(IMAGE).log
-SHARE_DIR=$(BASE_DIR)/share
+BASE_DIR := $(MAKEFILE_DIR)/../..
+LOG ?=$(MAKEFILE_DIR)/$(IMAGE).log
+SHARE_DIR ?=$(BASE_DIR)/share
 
 RUN=docker run --rm \
 	-v $(SHARE_DIR):/app/share \
