@@ -101,9 +101,8 @@ export async function saveStorage(
 
   try {
     const json = JSON.stringify(data, null, 2);
-    const tmp = fullPath + ".tmp";
-    await fs.writeFile(tmp, json, "utf-8");
-    await fs.rename(tmp, fullPath);
+    // const tmp = fullPath + ".tmp";
+    await fs.writeFile(fullPath, json, "utf-8");
 
     console.log("Storage saved:", fullPath);
   } catch (err) {
