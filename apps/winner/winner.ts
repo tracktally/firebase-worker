@@ -172,7 +172,8 @@ async function fetchData(app, challengeId, storagePath, debug):
 function newTopUser(topUser, users, topUserThreshold, storedData) {
   let oldTopUserId = storedData.topUserId;
   if (oldTopUserId == null){
-    throw new Error("No previous top user stored. Cannot happen.");
+    console.warn("No previous top user stored. Happens only during migration.");
+    oldTopUserId = topUser.id;
   }
 
   // XXX: Use old (previous top user and see if they increased their score)
