@@ -181,8 +181,8 @@ function newTopUser(topUser, users, topUserThreshold, storedData) {
   const threshold = Math.round(oldTopUser.counter * topUserThreshold);
   
   console.log("Checking for new top user:", topUser?.name);
-  console.log("Previous top user:", oldTopUser);
-  console.log("new top user counter:", topUser);
+  console.log("Previous top user:", oldTopUser.name, oldTopUser.counter);
+  console.log("new top user counter:", topUser.name, topUser.counter);
   console.log("threshold to reach: ", threshold);
   
   const isReached = topUser?.id !== oldTopUser?.id
