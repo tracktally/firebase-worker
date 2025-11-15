@@ -178,7 +178,7 @@ function newTopUser(topUser, users, topUserThreshold, storedData) {
 
   // XXX: Use old (previous top user and see if they increased their score)
   const oldTopUser = users.filter(u => u.id == oldTopUserId)[0];
-  const threshold = oldTopUser.counter * topUserThreshold;
+  const threshold = Math.round(oldTopUser.counter * topUserThreshold);
   
   console.log("Checking for new top user:", topUser?.name);
   console.log("Previous top user:", oldTopUser);
