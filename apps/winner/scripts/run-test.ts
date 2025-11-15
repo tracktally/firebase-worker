@@ -11,12 +11,12 @@ import { notifyTest } from "../../whatsapp";
  * To inform in the test group
  */ 
 const app = admin.initializeApp({
-  credential: admin.credential.cert(require(TRACKTALLY_PROD)),
-  // credential: admin.credential.cert(require(TRACKTALLY_DEV)),
+  // credential: admin.credential.cert(require(TRACKTALLY_PROD)),
+  credential: admin.credential.cert(require(TRACKTALLY_DEV)),
 });
 
-// const challengeId = TRACKTALLY_TEST_CHALLENGE_ID;
-const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
+const challengeId = TRACKTALLY_TEST_CHALLENGE_ID;
+// const challengeId = TRACKTALLY_HIGHLIGHT_CHALLENGE_ID;
 const dbFile = __dirname + "/../../../share/test_winner.json";
 const debug = true;
 const alwaysRun = false;
@@ -27,9 +27,10 @@ async function main() {
      dbFile,
      debug, alwaysRun);
 
-  if (result.containsWinners) {
+  if (result) {
     console.log("Winners detected, sending notification to test group");
-    notifyTest(result.message); /* test group */
+    console.log("Message:\n", result);
+    notifyTest(result); /* test group */
   }
 }
 

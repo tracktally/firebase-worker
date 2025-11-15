@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
 import { dailyStatsDateFormat, getResetDates, normalizeDate, userProgressSort } from "../util";
-import { generateWinnerMessage } from "./gpt_winner";
+import { generateTopUserMessage, generateWinnerMessage } from "./gpt_winner";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -47,7 +47,7 @@ export async function generateRanking(app, challengeId: string) {
   const offsetMin = -new Date().getTimezoneOffset();
   const sign = offsetMin >= 0 ? "+" : "-";
   const hours = String(Math.floor(Math.abs(offsetMin) / 60)).padStart(1, "0");
-  const tz=`UTC${sign}${hours}`
+  const tz = `UTC${sign}${hours}`
 
   users
     .filter(r => r.counter > 0 && r.goalReachedAt != null)
@@ -59,8 +59,12 @@ export async function generateRanking(app, challengeId: string) {
       rank++;
     });
 
-  return { message: today };
-}
+  return {
+    message: today,
+    users: users
+  };
+};
+
 
 async function getChallenge(app, challengeId: string) {
   const db = app.firestore();
@@ -79,17 +83,28 @@ async function getChallenge(app, challengeId: string) {
 type StoredData = {
   lastRun: Date | null;
   nextRun: Date | null;
+  topUserId: string | null;
+  topUserCounter: number | null;
+  topUserName: string | null;
+  topUserPromptContext: string;
 };
 
 async function loadStorageData(storagePath: string): Promise<StoredData | null> {
   const fullPath = path.resolve(storagePath);
-  let storedData = {};
+  let storedData = {} as StoredData
   try {
     const raw = await fs.readFile(fullPath, "utf-8");
     storedData = JSON.parse(raw);
   } catch (err) {
     console.warn(`No stored data found at ${fullPath}, starting fresh.`);
   }
+
+  storedData.nextRun = normalizeDate(storedData.nextRun) ?? null;
+  storedData.lastRun = normalizeDate(storedData.lastRun) ?? null;
+  storedData.topUserId = storedData.topUserId ?? null;
+  storedData.topUserCounter = storedData.topUserCounter ?? 0;
+  storedData.topUserName = storedData.topUserName ?? "";
+  storedData.topUserPromptContext = storedData.topUserPromptContext ?? "";
   return storedData as StoredData;
 }
 
@@ -120,61 +135,139 @@ async function generateMessage(app, challengeId, debug = false) {
   return await generateWinnerMessage(ranking, debug);
 }
 
-
-export async function runWinnerApp(app,
-  challengeId: string, storagePath: string, debug = false,
-  alwaysRun = false) {
-  let returnMsg = {
-    message: "",
-    containsWinners: false
-  };
+async function fetchData(app, challengeId, storagePath, debug):
+  Promise<{
+    challenge: any,
+    storedData: StoredData,
+    nextRun: Date | null,
+    nextResetDate: Date | null,
+    hasNoWinnerYet: boolean
+  }> {
 
   const challenge = await getChallenge(app, challengeId);
   const storedData = await loadStorageData(storagePath);
+
   const now = new Date();
-  let lastRun = normalizeDate(storedData.lastRun) ?? null;
-  let nextRun = normalizeDate(storedData.nextRun) ?? null;
+  const nextRun = normalizeDate(storedData.nextRun) ?? null;
   const { lastResetDate, nextResetDate, intervalHrs } = getResetDates(challenge, now);
-  
+
   // XXX: To awoid races between reset and winner announcement,
   // add a minimum wait time after reset
-  const waitTime = new Date(now.getTime() 
-      - 30 /*30 minutes */ * 60 * 1000);
-
+  const waitMin = 30;
+  const waitTime = new Date(now.getTime() - waitMin * 60 * 1000);
   const minWaitTimePassed = lastResetDate < waitTime;
 
-  console.log("lastreset" ,lastResetDate)
-  console.log("nextreset" ,nextResetDate)
-  console.log("intervall" ,intervalHrs)
+  // XXX: One winner per day
+  const hasNoWinnerYet = minWaitTimePassed && nextRun < nextResetDate;
 
-  console.log("Challenge:", challengeId, challenge.name);
-  console.log("Time:", now.toString());
-  console.log("lastRun:", lastRun);
-  console.log("nextRun", nextRun);
-  console.log("challenge: Last reset:", lastResetDate);
-  console.log("challenge: next reset:", nextResetDate);
-  console.log("wait time:", waitTime, minWaitTimePassed);
+  return {
+    challenge,
+    storedData,
+    nextRun,
+    nextResetDate,
+    hasNoWinnerYet
+  }
+}
 
-  if (alwaysRun 
-      || !nextRun 
-      || (minWaitTimePassed && nextRun < nextResetDate)) {
-    console.log("Running winner generation for challenge:", challengeId);
-
-    let message = await generateMessage(app, challengeId, debug);
-    if (message != null) {
-      console.log("Winner message generated");
-      returnMsg.message = message;
-      returnMsg.containsWinners = true;
-    }
-  } else {
-    console.log("Skipping winner generation");
+function newTopUser(topUser, users, topUserThreshold, storedData) {
+  let oldTopUserId = storedData.topUserId;
+  if (oldTopUserId == null){
+    throw new Error("No previous top user stored. Cannot happen.");
   }
 
-  if (returnMsg.containsWinners) {
+  // XXX: Use old (previous top user and see if they increased their score)
+  const oldTopUser = users.filter(u => u.id == oldTopUserId)[0];
+  const threshold = oldTopUser.counter * topUserThreshold;
+  
+  console.log("Checking for new top user:", topUser?.name);
+  console.log("Previous top user:", oldTopUser);
+  console.log("new top user counter:", topUser);
+  console.log("threshold to reach: ", threshold);
+  
+  const isReached = topUser?.id !== oldTopUser?.id
+    && (topUser.counter ?? 0) >= threshold;
+
+  return {
+    isReached,
+    threshold,
+    oldTopUser    
+  }
+}
+
+export async function runWinnerApp(app,
+  challengeId: string, storagePath: string, debug = false,
+  alwaysRun = false,
+  topUserThreshold = 1.1): Promise<string | null> {
+  const {
+    challenge,
+    storedData,
+    nextRun,
+    nextResetDate,
+    hasNoWinnerYet,
+  } = await fetchData(app, challengeId, storagePath, debug);
+
+  console.log("Running winner generation for challenge:", challengeId);
+
+  const {
+    message: ranking,
+    users,
+  } = await generateRanking(app, challengeId);
+
+  // XXX: No winners yet, try later
+  if (ranking == null || ranking.length == 0) {
+    console.log("No winners yet");
+    return null;
+  }
+
+  const topUser = users.sort((a, b) => b.counter - a.counter)[0];
+
+  // XXX: We have a winner, but never notfied about it, notify now
+  if (hasNoWinnerYet) {
+    console.log("New winner detected");
+    let message = await generateWinnerMessage(ranking, debug);
+    
     storedData.lastRun = new Date();
-    storedData.nextRun = nextResetDate;
-    await saveStorage(storagePath, storedData);
+    storedData.nextRun = nextResetDate;    
+    await saveTopUser(topUser, message, storedData, storagePath, true)
+    return message;
+  }
+
+  // XXX: We already have a winner, check if we have a new top user
+  const {isReached, threshold, oldTopUser} 
+    = newTopUser(topUser, users, topUserThreshold, storedData);
+  if (isReached) {
+    console.log("New top user detected:", topUser.name);
+    let newBest = `${topUser.name} (${topUser.counter})`;
+    let oldBest = `${oldTopUser.name} (${oldTopUser.counter})`;
+    let newThreshold = `${topUser.counter * topUserThreshold}`;
+    let message = await generateTopUserMessage(newBest,
+      oldBest,
+      storedData.topUserPromptContext,
+      debug);
+
+    await saveTopUser(topUser, message, storedData, storagePath);
+    return message;
+  }
+
+  console.log("No new winners or top users detected");
+  return null;
+}
+
+async function saveTopUser(topUser, promptContext, storedData, storagePath, clear: boolean = false) {
+  
+  storedData.topUserCounter = topUser.counter;
+  storedData.topUserId = topUser.id;
+  storedData.topUserName = topUser.name;
+  if (clear) {
+    storedData.topUserPromptContext = promptContext;
+  } else {
+    storedData.topUserPromptContext += `
+    
+    "${promptContext}
+    
+    `;
   }
   
-  return returnMsg;
+  await saveStorage(storagePath, storedData);
 }
+

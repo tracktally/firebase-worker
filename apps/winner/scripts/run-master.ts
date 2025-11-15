@@ -24,9 +24,9 @@ async function main() {
      dbFile,
      debug, alwaysRun);
 
-  if (result.containsWinners) {
+  if (result) {
     console.log("Winners detected, sending notification to test group");
-    notifyGroup(result.message);
+    notifyGroup(result);
   }
 }
 
