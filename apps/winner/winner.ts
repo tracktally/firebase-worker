@@ -199,6 +199,10 @@ export async function runWinnerApp(app,
   challengeId: string, storagePath: string, debug = false,
   alwaysRun = false,
   topUserThreshold = 1.1): Promise<string | null> {
+  
+  // Include previous prompt context in the top user message
+  const givePreviousPromtContext = false;
+
   const {
     challenge,
     storedData,
@@ -243,7 +247,7 @@ export async function runWinnerApp(app,
     let newThreshold = `${topUser.counter * topUserThreshold}`;
     let message = await generateTopUserMessage(newBest,
       oldBest,
-      storedData.topUserPromptContext,
+      givePreviousPromtContext ? storedData.topUserPromptContext : "",
       debug);
 
     await saveTopUser(topUser, message, storedData, storagePath);
