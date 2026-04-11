@@ -42,6 +42,7 @@ export async function generateMotivation(yesterday: string, currentProgress: str
 
     const message = response.choices[0].message.content
     .replace("markdown", "")
+    .replace("html", "")
     .replace(/```/g, "")
     .replace(/\*{2,}/g, "*")
     .trim();        
@@ -96,7 +97,8 @@ export async function generateMotivation(yesterday: string, currentProgress: str
 - Jana: 12
 - Michii: 12
 - Andrin: 12
-- Liblor: 12
+- Li
+blor: 12
     `;
     let today = `
 🥇

@@ -3,6 +3,11 @@ import * as admin from "firebase-admin";
 import { getResetDates, normalizeDate, userProgressSort } from "../util";
 import { spawn } from "child_process";
 
+// message formatting helpers
+const nl = "\n";
+const bStart = "<strong>";
+const bStop = "</strong>";
+
 // TODO: refactor users to their own type
 export type ChallengeCallback = (challenge: {
   id: string;
@@ -105,9 +110,9 @@ const getStreaksForUser = (id: string, updatedUsers: any[]) => {
 export const challengeMessageCallback: ChallengeCallback = (
   challenge, updatedChallenge,
   users, updatedUsers, data): string => {
-  let msg = `*${data.date}* \n\n`;
-  msg += `🏆 *${challenge.name}:*\n`;
-  msg += `- Team Reps: ${challenge.counter} / ${challenge.goalCounterChallenge}\n`;
+  let msg = `${bStart}${data.date}${bStop}${nl}${nl}`;
+  msg += `${bStart}${challenge.name}:${bStop}${nl}`;
+  msg += `- Team Reps: ${challenge.counter} / ${challenge.goalCounterChallenge}${nl}`;
   
   const isChallengePartialLost = 
     (challenge.partialStreak ?? 0) > 0 && (updatedChallenge.partialStreak ?? 0) == 0;
@@ -117,14 +122,14 @@ export const challengeMessageCallback: ChallengeCallback = (
   let msgChallengePatial = isChallengePartialLost ? " 💔" : "";
   let msgChallengeFull = isChallengeFullLost ? " 💔" : "";
 
-  msg += `- Partial Streak: ${(updatedChallenge.partialStreak ?? 0)} ${msgChallengePatial}\n`;
-  msg += `- Full Streak: ${(updatedChallenge.fullStreak ?? 0)} ${msgChallengeFull}\n\n`;
+  msg += `- Partial Streak: ${(updatedChallenge.partialStreak ?? 0)} ${msgChallengePatial}${nl}`;
+  msg += `- Full Streak: ${(updatedChallenge.fullStreak ?? 0)} ${msgChallengeFull}${nl}${nl}`;
 
   let msgStats = "";
 
   const most = users.sort((a, b) => b.counter - a.counter).filter(u => u.counter > 0);
   if (most.length > 0) {
-    msgStats += `💪 *Most reps:* ${most[0].name} (${most[0].counter})\n`;
+    msgStats += `${bStart}Most reps:${bStop} ${most[0].name} (${most[0].counter})${nl}`;
   }
    
   let sorted = users.sort((a, b) => userProgressSort(a, b)).filter(u => u.counter > 0);
@@ -141,16 +146,16 @@ export const challengeMessageCallback: ChallengeCallback = (
         const minutes = Math.floor((durationMs / (1000 * 60)) % 60);
         durationStr = `${hours}h ${minutes}min`;
       } catch (e) {}
-    msgStats += `💨 *Fastest:* ${sorted[0].name} (${durationStr})\n`;
+    msgStats += `${bStart}Fastest:${bStop} ${sorted[0].name} (${durationStr})${nl}`;
   }
   if (msgStats.length > 0) {
-    msg += msgStats + "\n";
+    msg += msgStats + nl;
   } 
 
-  msg += "📊 *Leaderboard:*\n";
+  msg += `${bStart}Leaderboard:${bStop}${nl}`;
 
   if (sorted.length === 0) {
-    msg += "- No participation\n";
+    msg += `- No participation${nl}`;
   } else {
 
     sorted.forEach((u, i) => {
@@ -176,23 +181,23 @@ export const challengeMessageCallback: ChallengeCallback = (
       // XXX: we need new stats form user as user may have
       // lost streak after current processing
       let newStats = getStreaksForUser(u.id, updatedUsers);
-      msg += `- ${getPos(i)} ${u.name}: ${u.counter} ${getStreak(newStats)}\n`;
+      msg += `- ${getPos(i)} ${u.name}: ${u.counter} ${getStreak(newStats)}${nl}`;
     });
 
   }
 
   // lost streaks
   if (data.lostFullStreaks.length > 0) {
-    msg += "\n💔 *Lost Full Streaks:*\n";
+    msg += nl + `${bStart}Lost Full Streaks:${bStop}${nl}`;
     data.lostFullStreaks.forEach(s => {
-      msg += `- ${s}\n`;
+      msg += `- ${s}${nl}`;
     });
   }
 
   if (data.lostPartialStreaks.length > 0) {
-    msg += "\n💔 *Lost Partial Streaks:*\n"
+    msg += nl + `${bStart}Lost Partial Streaks:${bStop}${nl}`;
     data.lostPartialStreaks.forEach(s => {
-      msg += `- ${s}\n`;
+      msg += `- ${s}${nl}`;
     });
   }
 
@@ -202,10 +207,10 @@ export const challengeMessageCallback: ChallengeCallback = (
 
   if (fullStreaks.length > 0) {    
     let max = getTopFullStreaks(fullStreaks, 0 /* top n */);
-    msg += "\n🔥 *Longest Full Streaks:*\n";
+    msg += nl + `${bStart}Longest Full Streaks:${bStop}${nl}`;
     fullStreaks.forEach(s => {
       if (s.fullStreak >= max) {
-        msg += `- ${s.name}: ${s.fullStreak}\n`;
+        msg += `- ${s.name}: ${s.fullStreak}${nl}`;
       }
     });
   }
@@ -215,10 +220,10 @@ export const challengeMessageCallback: ChallengeCallback = (
 
   if (partialStreaks.length > 0) {
     let max = getTopPartialStreaks(partialStreaks, 0);
-    msg += "\n🌗 *Longest Partial Streaks:*\n";
+    msg += nl + `${bStart}Longest Partial Streaks:${bStop}${nl}`;
     partialStreaks.forEach(s => {
       if (s.partialStreak >= max) {
-        msg += `- ${s.name}: ${s.partialStreak}\n`;
+        msg += `- ${s.name}: ${s.partialStreak}${nl}`;
       }
     });
   }
