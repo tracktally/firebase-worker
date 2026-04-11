@@ -65,6 +65,11 @@ export async function generateGptMessage(promt: string, debug = false) {
 
     const message = response.choices[0].message.content
         .replace("markdown", "")
+        .replace("html", "")
+        .replace("<br>", "\n")
+        .replace("<br/>", "\n")
+        .replace("<br >", "\n")
+        .replace("<br />", "\n")
         .replace(/```/g, "")
         .replace(/\*{2,}/g, "*")
         .trim();
