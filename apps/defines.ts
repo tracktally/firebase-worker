@@ -6,5 +6,5 @@ export const TRACKTALLY_DEV = __dirname + "/../secrets/service-account-challenge
 
 
 /* One challenge id is treated specially for whatsapp notifications */
-export const TRACKTALLY_HIGHLIGHT_CHALLENGE_ID = "XkROPB7880JnY05TcNCv";
+export const TRACKTALLY_HIGHLIGHT_CHALLENGE_ID = "7dVFyK1Pow3a23Q8FoKz";
 export const TRACKTALLY_TEST_CHALLENGE_ID = "rR3NHPGYsPtZ1fXEsWCT"
