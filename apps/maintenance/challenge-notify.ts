@@ -14,6 +14,8 @@ export type ChallengeCallback = (challenge: {
   name: string;
   counter: number;
 
+  totalCounter?: number,
+
   goalCounterUser?: number,
   goalCounterChallenge?: number,
   lastResetAt?: Date,
@@ -21,13 +23,12 @@ export type ChallengeCallback = (challenge: {
   // stats
   partialStreak?: number
   fullStreak?: number,
-  totalCounter?: number,
   bestPartialStreak?: number,
   bestFullStreak?: number,
 },
   updatedChallenge: any,
-  users: { id: string; name?: string; counter: number; lastActivityAt?: Date, goalReachedAt?: Date }[],
-  updatedUsers: { id: string; name?: string; counter: number; lastActivityAt?: Date, goalReachedAt?: Date }[],
+  users: { id: string; name?: string; counter: number; totalCounter: number, lastActivityAt?: Date, goalReachedAt?: Date }[],
+  updatedUsers: { id: string; name?: string; counter: number; totalCounter: number, lastActivityAt?: Date, goalReachedAt?: Date }[],
   data: {
     date: string;
     lostPartialStreaks: string[];
@@ -152,7 +153,7 @@ export const challengeMessageCallback: ChallengeCallback = (
     msg += msgStats + nl;
   } 
 
-  msg += `${bStart}Leaderboard:${bStop}${nl}`;
+  msg += `${bStart}Today:${bStop}${nl}`;
 
   if (sorted.length === 0) {
     msg += `- No participation${nl}`;
@@ -184,6 +185,20 @@ export const challengeMessageCallback: ChallengeCallback = (
       msg += `- ${getPos(i)} ${u.name}: ${u.counter} ${getStreak(newStats)}${nl}`;
     });
 
+  }
+
+  // all-time leaderboard
+  const allTime = updatedUsers
+    .filter(u => (u.totalCounter ?? 0) > 0)
+    .sort((a, b) => (b.totalCounter ?? 0) - (a.totalCounter ?? 0))
+    .slice(0, 3);
+
+  if (allTime.length > 0) {
+    msg += nl + `${bStart}All Time Best:${bStop}${nl}`;
+    allTime.forEach((u, i) => {
+      const getPos = (i) => i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉";
+      msg += `- ${getPos(i)} ${u.name}: ${u.totalCounter ?? 0}${nl}`;
+    });
   }
 
   // lost streaks
